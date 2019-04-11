@@ -22,7 +22,7 @@
   PRIMARY KEY (`id`),
   KEY `user_name` (`user_name`),
   KEY `name` (`name`),
-  KEY `alt_url` (`alt_url`),
+  KEY `alt_url` (`alt_url`)
 ) ENGINE=InnoDB DEFAULT CHARACTER SET {charset} COLLATE {charset}_general_ci;
 
 ALTER TABLE `{prefix}_post` ADD `collections` varchar(190) NOT NULL DEFAULT '0' AFTER `category`;
