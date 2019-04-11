@@ -643,9 +643,12 @@ HTML;
           </ul>
         </div>
 HTML;
+
+	if( $config['allow_alt_url'] ) $url = $config['http_home_url'] . 'collections/' . $val['id'] . '-' . $val['alt_url'];
+	else $url = $config['http_home_url'] . '?do=collections&id=' . $val['id'];		
 		
 		echo "<tr>
-        <td>{$val['id']}</td>
+        <td><a href=\"{$url}\" target\"_blank\">{$val['id']}</a></td>
         <td id=\"content_{$val['id']}\">{$val['name']}</td>
         <td>{$val['num_elem']}</td>
         <td>{$addedtime}</td>
