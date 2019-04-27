@@ -6,6 +6,9 @@
 	<version></version>
 	<dleversion>13</dleversion>
 	<versioncompare>greater</versioncompare>
+	<upgradeurl></upgradeurl>
+	<filedelete>0</filedelete>
+	<needplugin></needplugin>
 	<mysqlinstall><![CDATA[CREATE TABLE {prefix}_news_collections (
   `id` int(11) NOT NULL auto_increment,
   `user_name` varchar(100) NOT NULL DEFAULT '',
@@ -27,13 +30,21 @@
 
 ALTER TABLE `{prefix}_post` ADD `collections` varchar(190) NOT NULL DEFAULT '0' AFTER `category`;
 ALTER TABLE `{prefix}_users` ADD `favorites_collections` text NOT NULL;
+ALTER TABLE `{prefix}_usergroups` ADD `collections_allow_edit` tinyint(1) NOT NULL DEFAULT '0';
 INSERT INTO `{prefix}_admin_sections` (`name`, `title`, `descr`, `icon`, `allow_groups`) VALUES ('news_collections', 'Подборки новостей', '', '', '1');]]></mysqlinstall>
 	<mysqlupgrade><![CDATA[]]></mysqlupgrade>
 	<mysqlenable><![CDATA[]]></mysqlenable>
 	<mysqldisable><![CDATA[]]></mysqldisable>
 	<mysqldelete><![CDATA[DROP TABLE IF EXISTS {prefix}_news_collections;
+ALTER TABLE `{prefix}_post` DROP `collections`;
 ALTER TABLE `{prefix}_users` DROP `favorites_collections`;
+ALTER TABLE `{prefix}_usergroups` DROP `collections_allow_edit`;
 DELETE FROM `{prefix}_admin_sections` WHERE name = 'news_collections';]]></mysqldelete>
+	<phpinstall><![CDATA[$db->query("UPDATE ".PREFIX."_usergroups SET collections_allow_edit = 1 WHERE id = 1");]]></phpinstall>
+	<phpupgrade><![CDATA[]]></phpupgrade>
+	<phpenable><![CDATA[]]></phpenable>
+	<phpdisable><![CDATA[]]></phpdisable>
+	<phpdelete><![CDATA[]]></phpdelete>
 	<file name="engine/engine.php">
 		<operation action="after">
 			<searchcode><![CDATA[elseif ($do == 'stats') $nam_e = $lang['title_stats'];]]></searchcode>
@@ -394,6 +405,599 @@ echo $buffer;
 			<searchcode><![CDATA[} else $implugin = 'insertImage';]]></searchcode>
 			<replacecode><![CDATA[if ($mod == "collections") {
 	$image_upload = ""; $image_q_upload = "";
+}]]></replacecode>
+		</operation>
+	</file>
+	<file name="engine/modules/addnews.php">
+		<operation action="after">
+			<searchcode><![CDATA[if( $config['allow_alt_url'] ) $canonical = $config['http_home_url'] . "addnews.html"; else $canonical = $PHP_SELF."?do=addnews";]]></searchcode>
+			<replacecode><![CDATA[$collections_info = get_vars ( "collections" );
+
+if (!is_array ( $collections_info )) {
+	$collections_info = array ();
+
+	$db->query ( "SELECT id, user_name, name, alt_url, descr, num_elem, date, create_date, cover FROM " . PREFIX . "_news_collections ORDER BY id ASC" );
+	while ( $row = $db->get_row () ) {
+
+		$collections_info[$row['id']] = array ();
+
+		foreach ( $row as $key => $value ) {
+			$collections_info[$row['id']][$key] = stripslashes ( $value );
+		}
+
+	}
+	set_vars ( "collections", $collections_info );
+	$db->free ();
+}]]></replacecode>
+		</operation>
+		<operation action="before">
+			<searchcode><![CDATA[if( !is_array($_POST['catlist']) ) $_POST['catlist'] = array ();]]></searchcode>
+			<replacecode><![CDATA[if( !is_array($_POST['collections_list']) ) $_POST['collections_list'] = array ();
+		
+if( !count( $_POST['collections_list'] ) ) {
+			
+	$c_list = array ();
+	$c_list[] = '0';
+			
+} else $c_list = $_POST['collections_list'];
+
+$collections_list = array();
+	
+foreach ( $c_list as $value ) {
+	$collections_list[] = intval($value);
+}
+
+$c_list = $collections_list;
+$collections_list = $db->safesql( implode( ',', $collections_list ) );
+
+$c_allow = $user_group[$member_id['user_group']]['collections_allow_edit'];
+
+if( count($c_list) ) {
+
+	if( !$c_allow AND $member_id['user_group'] != "1" ) {
+		$stop .= "<li>Вы не можете указывать новостям подборки.</li>";
+	}
+
+}]]></replacecode>
+		</operation>
+		<operation action="replace">
+			<searchcode><![CDATA[category, alt_name,]]></searchcode>
+			<replacecode><![CDATA[category, collections, alt_name,]]></replacecode>
+		</operation>
+		<operation action="replace">
+			<searchcode><![CDATA['$category_list', '$alt_name',]]></searchcode>
+			<replacecode><![CDATA['$category_list', '$collections_list', '$alt_name',]]></replacecode>
+		</operation>
+		<operation action="before">
+			<searchcode><![CDATA[clear_cache( array('news_', 'related_', 'tagscloud_', 'archives_', 'calendar_', 'topnews_', 'rss', 'stats') );]]></searchcode>
+			<replacecode><![CDATA[if( count($c_list) ) {
+  
+  foreach( $c_list as $val ) {
+    
+      $getCollection = $db->super_query("SELECT news_ids FROM ".PREFIX."_news_collections WHERE id = '{$val}'");	
+
+      if( $getCollection['news_ids'] ) {
+        
+          $tmp_c = explode(',', $getCollection['news_ids']);
+          $tmp_c[] = $row['id'];
+          $c_list = implode(',', $tmp_c);
+        
+      } else $c_list = $val;
+
+      @unlink( ENGINE_DIR . '/cache/system/collections_title/collections_title_'.$val.'.php' );
+      $db->query("UPDATE ".PREFIX."_news_collections SET date = '{$thistime}', num_elem = num_elem+1, news_ids = '{$c_list}' WHERE id = '{$val}'");
+  
+  }
+  
+}]]></replacecode>
+		</operation>
+		<operation action="before">
+			<searchcode><![CDATA[$cat_list = explode( ',', $row['category'] );]]></searchcode>
+			<replacecode><![CDATA[$c_list = explode( ',', $row['collections'] );
+foreach( $collections_info as $val ) {
+   	if( in_array($val['id'], $c_list ) ) $c_opt .= '<option value="'.$val['id'].'" selected>'.$val['name'].'</option>';
+ 	else $c_opt .= '<option value="'.$val['id'].'">'.$val['name'].'</option>';
+}]]></replacecode>
+		</operation>
+		<operation action="before">
+			<searchcode><![CDATA[$tpl->set( '{title}', '' );]]></searchcode>
+			<replacecode><![CDATA[foreach( $collections_info as $val ) {
+ 	$c_opt .= '<option value="'.$val['id'].'">'.$val['name'].'</option>';
+}]]></replacecode>
+		</operation>
+		<operation action="before">
+			<searchcode><![CDATA[$tpl->set( '{bbcode}', $bb_code );]]></searchcode>
+			<replacecode><![CDATA[$collections_list = "<select data-placeholder=\"Выберите подборки\" name=\"collections_list[]\" id=\"collections\"  style=\"width:350px;\" multiple=\"multiple\">";
+$collections_list .= $c_opt;
+$collections_list .= "</select>";
+$c_allow = $user_group[$member_id['user_group']]['collections_allow_edit'];
+
+if( !$c_allow AND $member_id['user_group'] != "1" ) {
+	$tpl->set_block( "'\\[owner-c\\].*?\\[/owner-c\\]'si", '' );
+} else {
+ 	$tpl->set( '{collections}', $collections_list );
+	$tpl->set( '[owner-c]', '' );
+	$tpl->set( '[/owner-c]', '' );  
+}]]></replacecode>
+		</operation>
+		<operation action="after">
+			<searchcode><![CDATA[$onload_scripts[] = <<<HTML]]></searchcode>
+			<replacecode><![CDATA[$('#collections').chosen({allow_single_deselect:true, no_results_text: 'Ничего не найдено'});]]></replacecode>
+		</operation>
+	</file>
+	<file name="engine/inc/editnews.php">
+		<operation action="after">
+			<searchcode><![CDATA[include_once (DLEPlugins::Check(ENGINE_DIR . '/classes/parse.class.php'));]]></searchcode>
+			<replacecode><![CDATA[$collections_info = get_vars ( "collections" );
+
+if (!is_array ( $collections_info )) {
+	$collections_info = array ();
+
+	$db->query ( "SELECT id, user_name, name, alt_url, descr, num_elem, date, create_date, cover FROM " . PREFIX . "_news_collections ORDER BY id ASC" );
+	while ( $row = $db->get_row () ) {
+
+		$collections_info[$row['id']] = array ();
+
+		foreach ( $row as $key => $value ) {
+			$collections_info[$row['id']][$key] = stripslashes ( $value );
+		}
+
+	}
+	set_vars ( "collections", $collections_info );
+	$db->free ();
+}]]></replacecode>
+		</operation>
+		<operation action="after">
+			<searchcode><![CDATA[$cat_list = explode( ',', $row['category'] );]]></searchcode>
+			<replacecode><![CDATA[$c_list = explode( ',', $row['collections'] );
+foreach( $collections_info as $val ) {
+   	if( in_array($val['id'], $c_list ) ) $c_opt .= '<option value="'.$val['id'].'" selected>'.$val['name'].'</option>'; 
+ 	else $c_opt .= '<option value="'.$val['id'].'">'.$val['name'].'</option>'; 
+}]]></replacecode>
+		</operation>
+		<operation action="after">
+			<searchcode><![CDATA[<div class="form-group">
+  <label class="control-label col-sm-2">{$lang['edit_cat']}</label>
+  <div class="col-sm-10">
+	<select data-placeholder="{$lang['addnews_cat_sel']}" name="category[]" id="category" onchange="onCategoryChange(this)" {$category_multiple} style="width:100%;max-width:350px;">{$categories_list}</select>
+  </div>
+ </div>]]></searchcode>
+			<replacecode><![CDATA[<div class="form-group">
+  <label class="control-label col-sm-2">Подборки:</label>
+  <div class="col-sm-10">
+	<select data-placeholder="Выберите подборки..." name="collections_list[]" id="collections" style="width:100%;max-width:350px;" class="categoryselect" multiple>{$c_opt}</select>
+  </div>
+ </div>]]></replacecode>
+		</operation>
+		<operation action="before">
+			<searchcode><![CDATA[if( !is_array($category) ) $category = array ();]]></searchcode>
+			<replacecode><![CDATA[$collections = $_POST['collections_list'];
+if( !is_array($collections) ) $collections = array ();
+	
+if( !count($collections) ) $collections[] = '0';
+
+$c_list = array();
+
+foreach ( $collections as $value ) {
+	$c_list[] = intval($value);
+}
+
+$c_allow = explode( ',', $user_group[$member_id['user_group']]['collections_allow_edit'] );
+if( count($c_list) ) {
+	if( !$c_allow AND $member_id['user_group'] != "1" ) msg( "error", $lang['addnews_error'], "Вы не можете указывать новостям подборки.", "javascript:history.go(-1)" );
+}
+
+$c_list = $db->safesql( implode( ',', $c_list ) );]]></replacecode>
+		</operation>
+		<operation action="replace">
+			<searchcode><![CDATA[category='$category_list',]]></searchcode>
+			<replacecode><![CDATA[category='$category_list', collections='$c_list',]]></replacecode>
+		</operation>
+		<operation action="before">
+			<searchcode><![CDATA[category, approve,]]></searchcode>
+			<replacecode><![CDATA[category, collections, approve,]]></replacecode>
+		</operation>
+		<operation action="after">
+			<searchcode><![CDATA[$item_db[8] = $row['category'];]]></searchcode>
+			<replacecode><![CDATA[$item_db[9] = $row['collections'];]]></replacecode>
+		</operation>
+		<operation action="before">
+			<searchcode><![CDATA[if( $add_vote ) {]]></searchcode>
+			<replacecode><![CDATA[if( $c_list ) {
+  
+  $c_list = explode( ',', $c_list );
+  $tmp_c = explode( ',', $item_db[9] );
+  $addC_tmp = array_diff ($c_list, $tmp_c);
+  $removeC_tmp = array_diff ($tmp_c, $c_list);  
+
+  if( count($addC_tmp) ) {
+
+    foreach( $addC_tmp as $val ) {
+        $getCollection = $db->super_query("SELECT news_ids FROM ".PREFIX."_news_collections WHERE id = '{$val}'");	
+
+        if( $getCollection['news_ids'] ) {
+            $tmp_c = explode(',', $getCollection['news_ids']);
+            $tmp_c[] = $item_db[0];
+            $c_list = implode(',', $tmp_c);
+        } else $c_list = $val;
+
+        @unlink( ENGINE_DIR . '/cache/system/collections_title/collections_title_'.$val.'.php' );
+        $db->query("UPDATE ".PREFIX."_news_collections SET date = '{$thistime}', num_elem = num_elem+1, news_ids = '{$c_list}' WHERE id = '{$val}'");
+    }
+
+  }
+
+  if( count($removeC_tmp) ) {
+
+    foreach( $removeC_tmp as $val ) {
+
+      $getCollection = $db->super_query("SELECT news_ids FROM ".PREFIX."_news_collections WHERE id = '{$val}'");	
+
+      $list = explode(',', $getCollection['news_ids']);
+      $i = 0;
+
+      foreach ( $list as $id ) {
+
+        if( $id == $item_db[0] ) unset( $list[$i] );
+        $i ++;
+
+      }
+
+      if( count( $list ) ) $c_list = $db->safesql(implode( ",", $list ));
+      else $c_list = "";
+
+      @unlink( ENGINE_DIR . '/cache/system/collections_title/collections_title_'.$val.'.php' );
+      $db->query("UPDATE ".PREFIX."_news_collections SET num_elem = num_elem - 1, news_ids = '{$c_list}' WHERE id = '{$val}'");
+    }
+
+  }
+  
+} else {
+  
+  if( $item_db[9] ) {
+    
+    $tmp_c = explode( ',', $item_db[9] );
+
+    foreach( $tmp_c as $val ) {
+
+        $getCollection = $db->super_query("SELECT news_ids FROM ".PREFIX."_news_collections WHERE id = '{$val}'");
+      
+   		$list = explode(',', $getCollection['news_ids']);
+        $i = 0;
+
+        foreach ( $list as $id ) {
+
+            if( $id == $item_db[0] ) unset( $list[$i] );
+            $i ++;
+
+        }
+
+        if( count( $list ) ) $c_list = $db->safesql(implode( ",", $list ));
+        else $c_list = "";
+
+        @unlink( ENGINE_DIR . '/cache/system/collections_title/collections_title_'.$val.'.php' );  
+        $db->query("UPDATE ".PREFIX."_news_collections SET num_elem = num_elem - 1, news_ids = '{$c_list}' WHERE id = '{$val}'");
+
+    }    
+    
+  }
+  
+}]]></replacecode>
+		</operation>
+	</file>
+	<file name="engine/ajax/collections_menu.php">
+		<operation action="create">
+			<replacecode><![CDATA[<?php
+/* Зарезервировано для чего-то :D */
+?>]]></replacecode>
+		</operation>
+	</file>
+	<file name="engine/modules/main.php">
+		<operation action="before">
+			<searchcode><![CDATA[$tpl->copy_template = str_replace ( "{topnews}", $tpl->result['topnews'], $tpl->copy_template );]]></searchcode>
+			<replacecode><![CDATA[if (stripos ( $tpl->copy_template, "{collections" ) !== false) {
+	$tpl->copy_template = preg_replace_callback ( "#\\{collections(.+?)?\\}#i", "show_collections", $tpl->copy_template );
+}]]></replacecode>
+		</operation>
+	</file>
+	<file name="engine/modules/functions.php">
+		<operation action="before">
+			<searchcode><![CDATA[function custom_print( $matches=array() ) {]]></searchcode>
+			<replacecode><![CDATA[function show_collections( $matches=array() ) {
+	global $db, $config, $_TIME;
+	
+	$param_str = trim($matches[1]);
+	$custom_cache_id = "show_collections".$param_str.$config['skin'];
+	$thisdate = date( "Y-m-d H:i:s", $_TIME );
+	$sql_select = "SELECT id, name, alt_url, descr, date, create_date, num_elem, cover FROM " . PREFIX . "_news_collections";
+	$where = array();
+	$allow_cache = $config['allow_cache'];
+
+	if( preg_match( "#id=['\"](.+?)['\"]#i", $param_str, $match ) ) {
+
+		$temp_array = array();
+		$where_id = array();
+		$match[1] = intval($match[1]);
+
+		if ( $match[1] ) {
+
+			$where[] = "id ='" . $match[1] . "'";
+
+		}
+
+	} else $where[] = "1"; 
+	
+	if( preg_match( "#days=['\"](.+?)['\"]#i", $param_str, $match ) ) {
+		$days = intval(trim($match[1]));
+		
+		if($fromfuture) {
+			
+			$startdate = date("Y-m-d 00:00:00", strtotime("+1 day"));
+			$enddate = date("Y-m-d 00:00:00", strtotime("+".($days+1)." day"));
+			$where[] = "date >= '{$startdate}' AND date < '{$enddate}'";
+			
+		} else {
+			
+			$where[] = "date >= '{$thisdate}' - INTERVAL {$days} DAY AND date < '{$thisdate}'";
+			
+		}
+		
+	} else $days = 0;
+	
+	if( preg_match( "#template=['\"](.+?)['\"]#i", $param_str, $match ) ) {
+		$custom_template = trim($match[1]);
+	} else $custom_template = "collections_block";
+
+	if( preg_match( "#sort=['\"](.+?)['\"]#i", $param_str, $match ) ) {
+		$allowed_sort = array ('asc' => 'ASC', 'desc' => 'DESC' );
+
+		$match[1] = strtolower($match[1]);
+
+		if ( $allowed_sort[$match[1]] ) $news_msort = $allowed_sort[$match[1]];
+
+	} else $news_msort = 'ASC';
+
+	if( preg_match( "#limit=['\"](.+?)['\"]#i", $param_str, $match ) ) {
+		$limit = intval($match[1]);
+	} else $limit = 1;  
+  
+	if( preg_match( "#order=['\"](.+?)['\"]#i", $param_str, $match ) ) {
+		$allowed_sort = array ('date' => 'date', 'create_date' => 'create_date', 'num_elem' => 'num_elem', 'name' => 'name', 'rand' => 'RAND()' );
+
+		$match[1] = strtolower($match[1]);
+
+		if ( $allowed_sort[$match[1]] ) $news_sort = $allowed_sort[$match[1]];
+
+		if ($match[1] == "rand" ) { $news_msort = ""; }
+
+	} else $news_sort = "date";
+
+	$content = dle_cache( "collection_block", $custom_cache_id, true );
+	
+	if( $content !== false ) {
+		
+		$config['allow_cache'] = $allow_cache;
+			
+		return $content;
+	
+	} else {
+
+		$tpl = new dle_template();
+		$tpl->dir = TEMPLATE_DIR;				
+
+		$tpl->load_template( $custom_template . '.tpl' );
+	
+		$sql_select .= " WHERE ".implode(' AND ', $where)." ORDER BY " . $news_sort . " " . $news_msort . " LIMIT " . $limit;
+		
+		$sql_result = $db->query( $sql_select );
+
+      	while ( $row = $db->get_row( $sql_result ) ) {
+          
+          $found = true;
+          
+          $row['date'] = strtotime( $row['date'] );
+          
+ 		  $row['name'] = stripslashes( $row['name'] );
+
+		  $tpl->set( '{name}', str_replace("&amp;amp;", "&amp;",  htmlspecialchars( $row['name'], ENT_QUOTES, $config['charset'] ) ) );
+
+		  if ( preg_match( "#\\{name limit=['\"](.+?)['\"]\\}#i", $tpl->copy_template, $matches ) ) {
+			$count= intval($matches[1]);
+			$row['name'] = strip_tags( $row['name'] );
+
+			if( $count AND dle_strlen( $row['name'], $config['charset'] ) > $count ) {
+						
+				$row['name'] = dle_substr( $row['name'], 0, $count, $config['charset'] );
+						
+				if( ($temp_dmax = dle_strrpos( $row['name'], ' ', $config['charset'] )) ) $row['name'] = dle_substr( $row['name'], 0, $temp_dmax, $config['charset'] );
+					
+			}
+
+			$tpl->set( $matches[0], str_replace("&amp;amp;", "&amp;",  htmlspecialchars( $row['name'], ENT_QUOTES, $config['charset'] ) ) );
+
+		  }
+          
+          if( date( 'Ymd', $row['date'] ) == date( 'Ymd', $_TIME ) ) {
+
+              $tpl->set( '{date}', $lang['time_heute'] . langdate( ", H:i", $row['date'] ) );
+
+          } elseif( date( 'Ymd', $row['date'] ) == date( 'Ymd', ($_TIME - 86400) ) ) {
+
+              $tpl->set( '{date}', $lang['time_gestern'] . langdate( ", H:i", $row['date'] ) );
+
+          } else {
+
+              $tpl->set( '{date}', langdate( $config['timestamp_active'], $row['date'] ) );
+
+          }
+          
+		if( $row['cover'] AND file_exists( ROOT_DIR . '/uploads/posts/' . $row['cover'] ) ) {
+
+			$tpl->set( '{cover}', $config['http_home_url'] . 'uploads/posts/' . $row['cover'] );
+		
+		} else $tpl->set( '{cover}', '{THEME}/dleimages/no_image.jpg'  );
+	
+		if( $config['allow_alt_url'] ) $url = $config['http_home_url'] . 'collections/' . $row['id'] . '-' . $row['alt_url'];
+		else $url = $config['http_home_url'] . '?do=collections&id=' . $row['id'];
+
+		$tpl->set( '{num_elem}', intval($row['num_elem']) );
+		$tpl->set( '{url}', $url );
+
+		$tpl->compile( 'collections' );	
+          
+        }  
+      
+		if ( $found ) create_cache( "collection_block", $tpl->result['collections'], $custom_cache_id, true );
+		
+		$config['allow_cache'] = $allow_cache;
+		
+		return $tpl->result['collections'];
+	
+	}
+
+}]]></replacecode>
+		</operation>
+	</file>
+	<file name="engine/inc/search.php">
+		<operation action="before">
+			<searchcode><![CDATA[if (in_array("news", $_POST['table'])) {]]></searchcode>
+			<replacecode><![CDATA[if (in_array("collections", $_POST['table'])) {
+	$db->query("UPDATE `" . PREFIX . "_news_collections` SET `descr`=REPLACE(`descr`,'$find','$replace')");
+}]]></replacecode>
+		</operation>
+		<operation action="after">
+			<searchcode><![CDATA[<option value="banners" selected>{$lang['find_rbanners']}</option>]]></searchcode>
+			<replacecode><![CDATA[<option value="collections">Подборки новостей</option>]]></replacecode>
+		</operation>
+	</file>
+	<file name="engine/modules/deletenews.php">
+		<operation action="replace">
+			<searchcode><![CDATA[category, alt_name]]></searchcode>
+			<replacecode><![CDATA[category, collections, alt_name]]></replacecode>
+		</operation>
+		<operation action="after">
+			<searchcode><![CDATA[deletenewsbyid( $row['id'] );]]></searchcode>
+			<replacecode><![CDATA[if( $row['collections'] ) {
+    
+  $tmp_c = explode( ',', $row['collections'] );
+
+  foreach( $tmp_c as $val ) {
+
+    $getCollection = $db->super_query("SELECT news_ids FROM ".PREFIX."_news_collections WHERE id = '{$val}'");
+
+    $list = explode(',', $getCollection['news_ids']);
+    $i = 0;
+
+    foreach ( $list as $id ) {
+
+      if( $id == $row['id'] ) unset( $list[$i] );
+      $i ++;
+
+    }
+
+    if( count( $list ) ) $c_list = $db->safesql(implode( ",", $list ));
+    else $c_list = "";
+
+    @unlink( ENGINE_DIR . '/cache/system/collections_title/collections_title_'.$val.'.php' );  
+    $db->query("UPDATE ".PREFIX."_news_collections SET num_elem = num_elem - 1, news_ids = '{$c_list}' WHERE id = '{$val}'");
+
+  }
+    
+}]]></replacecode>
+		</operation>
+	</file>
+	<file name="engine/inc/usergroup.php">
+		<operation action="after">
+			<searchcode><![CDATA[$allow_file_upload = intval( $_REQUEST['allow_file_upload'] );]]></searchcode>
+			<replacecode><![CDATA[$collections_allow_edit = intval( $_REQUEST['collections_allow_edit'] );]]></replacecode>
+		</operation>
+		<operation action="replace">
+			<searchcode><![CDATA[allow_file_upload,]]></searchcode>
+			<replacecode><![CDATA[allow_file_upload, collections_allow_edit,]]></replacecode>
+		</operation>
+		<operation action="replace">
+			<searchcode><![CDATA['$allow_file_upload', '$allow_signature',]]></searchcode>
+			<replacecode><![CDATA['$allow_file_upload', '$allow_signature', 'collections_allow_edit',]]></replacecode>
+		</operation>
+		<operation action="replace">
+			<searchcode><![CDATA[allow_file_upload='$allow_file_upload',]]></searchcode>
+			<replacecode><![CDATA[allow_file_upload='$allow_file_upload', collections_allow_edit='$collections_allow_edit',]]></replacecode>
+		</operation>
+		<operation action="after">
+			<searchcode><![CDATA[if( $user_group[$id]['allow_file_upload'] ) $allow_file_upload = "checked";]]></searchcode>
+			<replacecode><![CDATA[if( $user_group[$id]['collections_allow_edit'] ) $collections_allow_edit = "checked";]]></replacecode>
+		</operation>
+		<operation action="after">
+			<searchcode><![CDATA[<tr>
+    <td><h6 class="media-heading text-semibold">{$lang['opt_sys_file']}</h6><span class="text-muted text-size-small hidden-xs">{$lang['opt_sys_filed']}</span></td>
+    <td><input class="switch" type="checkbox" name="allow_file_upload" {$allow_file_upload} value="1" {$gastgroup}></td>
+</tr>]]></searchcode>
+			<replacecode><![CDATA[<tr>
+    <td><h6 class="media-heading text-semibold">Разрешение группе редактировать подборки</h6></td>
+    <td><input class="switch" type="checkbox" name="collections_allow_edit" {$collections_allow_edit} value="1" {$gastgroup}></td>
+</tr>]]></replacecode>
+		</operation>
+	</file>
+	<file name="engine/inc/include/functions.inc.php">
+		<operation action="replace">
+			<searchcode><![CDATA[function set_vars($file, $data) {
+
+	$file = totranslit($file, true, false);
+
+	if ( is_array($data) OR is_int($data) ) {
+		
+		file_put_contents (ENGINE_DIR . '/cache/system/' . $file . '.php', json_encode( $data, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES ), LOCK_EX);
+		@chmod( ENGINE_DIR . '/cache/system/' . $file . '.php', 0666 );
+
+	}
+
+}]]></searchcode>
+			<replacecode><![CDATA[function set_vars($file, $data, $path = false) {
+	
+	$file = totranslit($file, true, false);
+	
+	if ( is_array($data) OR is_int($data) ) {
+		
+		if(!$path){
+		file_put_contents (ENGINE_DIR . '/cache/system/' . $file . '.php', json_encode( $data, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES ), LOCK_EX);
+		@chmod( ENGINE_DIR . '/cache/system/' . $file . '.php', 0666 );
+		}else{
+		file_put_contents (ENGINE_DIR . $path . $file . '.php', json_encode( $data, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES ), LOCK_EX);
+		@chmod( ENGINE_DIR . $path . $file . '.php', 0666 );			
+		}
+	}
+}]]></replacecode>
+		</operation>
+		<operation action="replace">
+			<searchcode><![CDATA[function get_vars($file) {
+	$file = totranslit($file, true, false);
+
+	$data = @file_get_contents( ENGINE_DIR . '/cache/system/' . $file . '.php' );
+
+	if ( $data !== false ) {
+
+		$data = json_decode( $data, true );
+		if ( is_array($data) OR is_int($data) ) return $data;
+
+	} 
+
+	return false;
+
+}]]></searchcode>
+			<replacecode><![CDATA[function get_vars($file, $path) {
+	$file = totranslit($file, true, false);
+
+	if(!$path) $data = @file_get_contents( ENGINE_DIR . '/cache/system/' . $file . '.php' );
+	else $data = @file_get_contents( ENGINE_DIR . $path . $file . '.php' );
+
+	if ( $data !== false ) {
+
+		$data = json_decode( $data, true );
+		if ( is_array($data) OR is_int($data) ) return $data;
+
+	} 
+
+	return false;	
 }]]></replacecode>
 		</operation>
 	</file>
