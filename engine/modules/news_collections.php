@@ -95,6 +95,8 @@ if( $collections_id ) {
 	while ( $row = $db->get_row() ) {
 	
 		$collections_found = true;
+		$row['date'] = strtotime( $row['date'] );
+		$row['create_date'] = strtotime( $row['create_date'] );
 		
 		if( $is_logged ) {
 			
@@ -103,13 +105,13 @@ if( $collections_id ) {
 			if( !in_array( $row['id'], $fav_arr ) ) {
 
 				$tpl->set( '{favorites}', "<a id=\"fav-id-" . $row['id'] . "\" class=\"collections_fav\" href=\"#\" onclick=\"doFavorites_collections('" . $row['id'] . "', 'plus', 0); return false;\" title=\"" . $lang['news_addfav'] . "\"><svg class=\"icon icon-fav\"><use xlink:href=\"#icon-fav\"></use></svg></a>" );
-				$tpl->set( '[add-favorites]', "<a id=\"fav-id-" . $row['id'] . "\" class=\"collections_fav\" onclick=\"doFavorites_collections('" . $row['id'] . "', 'plus', 1); return false;\" href=\"#\">" );
+				$tpl->set( '[add-favorites]', "<a id=\"fav-id-" . $row['id'] . "\" class=\"collections_fav\" onclick=\"doFavorites_collections('" . $row['id'] . "', 'plus', 0); return false;\" href=\"#\">" );
 				$tpl->set( '[/add-favorites]', "</a>" );
 				$tpl->set_block( "'\\[del-favorites\\](.*?)\\[/del-favorites\\]'si", "" );
 			} else { 
 
 				$tpl->set( '{favorites}', "<a id=\"fav-id-" . $row['id'] . "\" class=\"collections_fav\" href=\"#\" onclick=\"doFavorites_collections('" . $row['id'] . "', 'minus', 0); return false;\" title=\"" . $lang['news_minfav'] . "\"><svg class=\"icon icon-star\"><use xlink:href=\"#icon-star\"></use></svg></a>" );
-				$tpl->set( '[del-favorites]', "<a id=\"fav-id-" . $row['id'] . "\" class=\"collections_fav\" onclick=\"doFavorites_collections('" . $row['id'] . "', 'minus', 1); return false;\" href=\"#\">" );
+				$tpl->set( '[del-favorites]', "<a id=\"fav-id-" . $row['id'] . "\" class=\"collections_fav\" onclick=\"doFavorites_collections('" . $row['id'] . "', 'minus', 0); return false;\" href=\"#\">" );
 				$tpl->set( '[/del-favorites]', "</a>" );
 				$tpl->set_block( "'\\[add-favorites\\](.*?)\\[/add-favorites\\]'si", "" );
 			}
@@ -130,7 +132,91 @@ if( $collections_id ) {
 		if( $config['allow_alt_url'] ) $url = $config['http_home_url'] . 'collections/' . $row['id'] . '-' . $row['alt_url'];
 		else $url = $config['http_home_url'] . '?do=collections&id=' . $row['id'];
 	
-		$tpl->set( '{title}', $row['name'] );
+		$tpl->set( '{title}', str_replace("&amp;amp;", "&amp;", htmlspecialchars( $row['name'], ENT_QUOTES, $config['charset'] ) ) );
+		
+		if ( preg_match( "#\\{title limit=['\"](.+?)['\"]\\}#i", $tpl->copy_template, $matches ) ) {
+			$count= intval($matches[1]);
+			$row['name'] = strip_tags( $row['name'] );
+
+			if( $count AND dle_strlen( $row['name'], $config['charset'] ) > $count ) {
+		
+				$row['name'] = dle_substr( $row['name'], 0, $count, $config['charset'] );
+					
+				if( ($temp_dmax = dle_strrpos( $row['name'], ' ', $config['charset'] )) ) $row['name'] = dle_substr( $row['name'], 0, $temp_dmax, $config['charset'] );
+				
+			}
+			$tpl->set( $matches[0], str_replace("&amp;amp;", "&amp;", htmlspecialchars( $row['name'], ENT_QUOTES, $config['charset'] ) ) );
+		
+		}
+		
+		if( date( 'Ymd', $row['date'] ) == date( 'Ymd', $_TIME ) ) {
+			
+			$tpl->set( '{date}', $lang['time_heute'] . langdate( ", H:i", $row['date'] ) );
+		
+		} elseif( date( 'Ymd', $row['date'] ) == date( 'Ymd', ($_TIME - 86400) ) ) {
+			
+			$tpl->set( '{date}', $lang['time_gestern'] . langdate( ", H:i", $row['date'] ) );
+		
+		} else {
+			
+			$tpl->set( '{date}', langdate( ( $config['collection_timestamp_active'] ? $config['collection_timestamp_active'] : $config['timestamp_active'] ), $row['date'] ) );
+		
+		}
+
+		if( date( 'Ymd', $row['create_date'] ) == date( 'Ymd', $_TIME ) ) {
+			
+			$tpl->set( '{create_date}', $lang['time_heute'] . langdate( ", H:i", $row['create_date'] ) );
+		
+		} elseif( date( 'Ymd', $row['create_date'] ) == date( 'Ymd', ($_TIME - 86400) ) ) {
+			
+			$tpl->set( '{create_date}', $lang['time_gestern'] . langdate( ", H:i", $row['create_date'] ) );
+		
+		} else {
+			
+			$tpl->set( '{create_date}', langdate( ( $config['collection_timestamp_active'] ? $config['collection_timestamp_active'] : $config['timestamp_active'] ), $row['create_date'] ) );
+		
+		}
+
+		$news_date = $row['date'];
+		$tpl->copy_template = preg_replace_callback ( "#\{date=(.+?)\}#i", "formdate", $tpl->copy_template );
+		$news_date = $row['create_date'];
+		$tpl->copy_template = preg_replace_callback ( "#\{create_date=(.+?)\}#i", "formdate", $tpl->copy_template );		
+		
+		if( $row['descr'] ) {
+			
+			$row['descr'] = stripslashes($row['descr']);
+			$tpl->set( '{descr}', $row['descr'] );
+			
+			if ( preg_match( "#\\{descr limit=['\"](.+?)['\"]\\}#i", $tpl->copy_template, $matches ) ) {
+				$count= intval($matches[1]);
+				
+				$row['descr'] = preg_replace( "#<!--dle_spoiler(.+?)<!--spoiler_text-->#is", "", $row['descr'] );
+				$row['descr'] = preg_replace( "#<!--spoiler_text_end-->(.+?)<!--/dle_spoiler-->#is", "", $row['descr'] );	
+				$row['descr'] = preg_replace( "'\[attachment=(.*?)\]'si", "", $row['descr'] );
+				$row['descr'] = preg_replace ( "#\[hide(.*?)\](.+?)\[/hide\]#is", "", $row['descr'] );
+					
+				$row['descr'] = str_replace( "><", "> <", $row['descr'] );
+				$row['descr'] = strip_tags( $row['descr'], "<br>" );
+				$row['descr'] = trim(str_replace( "<br>", " ", str_replace( "<br />", " ", str_replace( "\n", " ", str_replace( "\r", "", $row['descr'] ) ) ) ));
+				$row['descr'] = preg_replace('/\s+/u', ' ', $row['descr']);
+
+				if( $count AND dle_strlen( $row['descr'], $config['charset'] ) > $count ) {
+						
+					$row['descr'] = dle_substr( $row['descr'], 0, $count, $config['charset'] );
+						
+					if( ($temp_dmax = dle_strrpos( $row['descr'], ' ', $config['charset'] )) ) $row['descr'] = dle_substr( $row['descr'], 0, $temp_dmax, $config['charset'] );
+					
+				}
+
+				$tpl->set( $matches[0], $row['descr'] );
+
+			}
+			
+			$tpl->set( '[not-descr]', '' );
+			$tpl->set( '[/not-descr]', '' );
+		
+		} else $tpl->set_block( "'\\[not-descr\\](.*?)\\[/not-descr\\]'si", "" );
+		
 		$tpl->set( '{num_elem}', $row['num_elem'] );
 		$tpl->set( '{url}', $url );
 
@@ -332,6 +418,7 @@ if( $collections_id ) {
 		
 	$ajax .= <<<HTML
 <script>
+
 function doFavorites_collections( fav_id, event, alert ){
 	ShowLoading('');
 
