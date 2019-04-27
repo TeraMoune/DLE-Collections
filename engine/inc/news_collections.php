@@ -251,6 +251,7 @@ HTML;
 	showRow( "Разделитель подборок на странице новости", "По умолчанию - запятая", "<input autocomplete=\"off\" class=\"form-control\" type=\"text\" name=\"save_con[collection_separator]\" value=\"" . ( $config['collection_separator'] ? $config['collection_separator'] : ',' ) . "\" style=\"width:100%;max-width:50px;float:right\">" );
 	showRow( $lang['opt_sys_msort'], $lang['opt_sys_msortd']."<br>По умолчанию: {$config['news_msort']}", "<div style=\"float:right\">" . makeDropDown( array ("DESC" => $lang['opt_sys_mminus'], "ASC" => $lang['opt_sys_mplus'] ), "save_con[collections_news_msort]", ( $config['collections_news_msort'] ? $config['collections_news_msort'] : $config['news_msort'] ) ) . "</div>" );
 	showRow( $lang['opt_sys_sort'], $lang['opt_sys_sortd']."<br>По умолчанию: {$config['news_sort']}", "<div style=\"float:right\">" . makeDropDown( array ("date" => $lang['opt_sys_sdate'], "rating" => $lang['opt_sys_srate'], "news_read" => $lang['opt_sys_sview'], "title" => $lang['opt_sys_salph'] ), "save_con[collections_news_sort]", ( $config['collections_news_sort'] ? $config['collections_news_sort'] : $config['news_sort'] ) ) . "</div>" );
+	showRow( $lang['opt_sys_an'], "<a onclick=\"javascript:Help('date'); return false;\" href=\"#\">$lang[opt_sys_and]</a>", "<div style=\"float:right\"><input  type=\"text\" class=\"form-control\" style=\"max-width:150px; text-align: center;\" name=\"save_con[collection_timestamp_active]\" value=\"".( $config['collection_timestamp_active'] ? $config['collection_timestamp_active'] : $config['timestamp_active'] )."\"></div>" );
 	
     echo <<<HTML
 	</table>
@@ -645,7 +646,7 @@ HTML;
 HTML;
 
 	if( $config['allow_alt_url'] ) $url = $config['http_home_url'] . 'collections/' . $val['id'] . '-' . $val['alt_url'];
-	else $url = $config['http_home_url'] . '?do=collections&id=' . $val['id'];		
+	else $url = $config['http_home_url'] . '?do=collections&id=' . $val['id'];
 		
 		echo "<tr>
         <td><a href=\"{$url}\" target\"_blank\">{$val['id']}</a></td>
@@ -794,7 +795,7 @@ HTML;
 	
 	$id = intval( $_GET['id'] );
 	
-	$row = $db->super_query( "SELECT * FROM " . PREFIX . "_news_collections WHERE id = '$id'" );
+	$row = $db->super_query( "SELECT * FROM " . PREFIX . "_news_collections WHERE id = '{$id}'" );
 	
 	if( !$row  ) {
 		
