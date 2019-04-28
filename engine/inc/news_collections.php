@@ -340,11 +340,31 @@ HTML;
 	
 			@unlink( ROOT_DIR . "/uploads/posts/" . $folder_prefix . $image );	
 			
-		}
+		}	
+
+		$sql_result = $db->query( "SELECT user_id, favorites FROM " . USERPREFIX . "_users WHERE favorites_collections LIKE '%{$id}%'" );
+		
+		while ( $c_list = $db->get_row($sql_result) ) {
+			
+			$temp_fav = explode( ",", $c_list['favorites_collections'] );
+			$new_fav = array();
+			
+			foreach ( $temp_fav as $value ) {
+				$value = intval($value);
+				if($value != $id ) $new_fav[] = $value;
+			}
+			
+			if(count($new_fav)) $new_fav = $db->safesql(implode(",", $new_fav));
+			else $new_fav = "";
+			
+			$db->query( "UPDATE " . USERPREFIX . "_users SET favorites_collections='{$new_fav}' WHERE user_id='{$c_list['user_id']}'" );
+
+		}		
 		
 		$db->query( "DELETE FROM " . PREFIX . "_news_collections WHERE id = '{$id}'" );
 		@unlink( ENGINE_DIR . '/cache/system/collections.php' );
-		$db->query( "INSERT INTO " . USERPREFIX . "_admin_logs (name, date, ip, action, extras) values ('".$db->safesql($member_id['name'])."', '{$_TIME}', '{$_IP}', '48', 'Удаление подборки: ".$db->safesql($row['name'])."-{$id}')" );
+		@unlink( ENGINE_DIR . '/cache/system/collections_title/collections_title_'.$id.'.php' );
+		$db->query( "INSERT INTO " . USERPREFIX . "_admin_logs (name, date, ip, action, extras) values ('".$db->safesql($member_id['name'])."', '{$_TIME}', '{$_IP}', '48', 'Удаление подборки: ".$db->safesql($row['name'])."- ID:{$id}')" );
 		die('ok');
 		
 	} else die('error');
@@ -659,7 +679,7 @@ HTML;
 
 	}
 
-	echo "</tbody></table></div></div><center><button type=\"submit\" class=\"btn bg-teal btn-raised position-left legitRipple\"><i class=\"fa fa-floppy-o position-left\"></i>Сохранить</button></center>";
+	echo "</tbody></table></div></div>";
 
 	echo <<<HTML
 <script>
