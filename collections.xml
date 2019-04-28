@@ -3,7 +3,7 @@
 	<name>Collections</name>
 	<description>Подборки для DataLife Engine. По вопросам: teramoune@gmail.com</description>
 	<icon></icon>
-	<version></version>
+	<version>0.2</version>
 	<dleversion>13</dleversion>
 	<versioncompare>greater</versioncompare>
 	<upgradeurl></upgradeurl>
@@ -240,27 +240,6 @@ else $next = $url_page . '/page/' . $next_page . '/';]]></replacecode>
 		</operation>
 	</file>
 	<file name="engine/modules/show.full.php">
-		<operation action="before">
-			<searchcode><![CDATA[$allow_list = explode( ',', $user_group[$member_id['user_group']]['allow_cats'] );]]></searchcode>
-			<replacecode><![CDATA[$collections_info = get_vars ( "collections" );
-
-if (!is_array ( $collections_info )) {
-	$collections_info = array ();
-
-	$db->query ( "SELECT id, user_name, name, alt_url, descr, num_elem, date, create_date, cover FROM " . PREFIX . "_news_collections ORDER BY id ASC" );
-	while ( $row = $db->get_row () ) {
-
-		$collections_info[$row['id']] = array ();
-
-		foreach ( $row as $key => $value ) {
-			$collections_info[$row['id']][$key] = stripslashes ( $value );
-		}
-
-	}
-	set_vars ( "collections", $collections_info );
-	$db->free ();
-}]]></replacecode>
-		</operation>
 		<operation action="after">
 			<searchcode><![CDATA[if ($config['category_separator'] != ',') $config['category_separator'] = ' '.$config['category_separator'];]]></searchcode>
 			<replacecode><![CDATA[if( !$row['collections'] ) {
@@ -315,6 +294,29 @@ if (!is_array ( $collections_info )) {
 		<operation action="after">
 			<searchcode><![CDATA[$tpl->set( '{favorites-link}', $PHP_SELF . "?do=favorites" );]]></searchcode>
 			<replacecode><![CDATA[$tpl->set( '{favorites-collections-link}', $PHP_SELF . "?do=collections&action=favorites" );]]></replacecode>
+		</operation>
+		<operation action="after">
+			<searchcode><![CDATA[if( $config['start_site'] == 3 AND !$_SERVER['QUERY_STRING'] AND !$_POST['do']) {
+	$dle_module = "main";
+}]]></searchcode>
+			<replacecode><![CDATA[$collections_info = get_vars ( "collections" );
+
+if (!is_array ( $collections_info )) {
+	$collections_info = array ();
+
+	$db->query ( "SELECT id, user_name, name, alt_url, descr, num_elem, date, create_date, cover FROM " . PREFIX . "_news_collections ORDER BY id ASC" );
+	while ( $row = $db->get_row () ) {
+
+		$collections_info[$row['id']] = array ();
+
+		foreach ( $row as $key => $value ) {
+			$collections_info[$row['id']][$key] = stripslashes ( $value );
+		}
+
+	}
+	set_vars ( "collections", $collections_info );
+	$db->free ();
+}]]></replacecode>
 		</operation>
 	</file>
 	<file name="engine/ajax/collections_favorites.php">
@@ -409,27 +411,6 @@ echo $buffer;
 		</operation>
 	</file>
 	<file name="engine/modules/addnews.php">
-		<operation action="after">
-			<searchcode><![CDATA[if( $config['allow_alt_url'] ) $canonical = $config['http_home_url'] . "addnews.html"; else $canonical = $PHP_SELF."?do=addnews";]]></searchcode>
-			<replacecode><![CDATA[$collections_info = get_vars ( "collections" );
-
-if (!is_array ( $collections_info )) {
-	$collections_info = array ();
-
-	$db->query ( "SELECT id, user_name, name, alt_url, descr, num_elem, date, create_date, cover FROM " . PREFIX . "_news_collections ORDER BY id ASC" );
-	while ( $row = $db->get_row () ) {
-
-		$collections_info[$row['id']] = array ();
-
-		foreach ( $row as $key => $value ) {
-			$collections_info[$row['id']][$key] = stripslashes ( $value );
-		}
-
-	}
-	set_vars ( "collections", $collections_info );
-	$db->free ();
-}]]></replacecode>
-		</operation>
 		<operation action="before">
 			<searchcode><![CDATA[if( !is_array($_POST['catlist']) ) $_POST['catlist'] = array ();]]></searchcode>
 			<replacecode><![CDATA[if( !is_array($_POST['collections_list']) ) $_POST['collections_list'] = array ();
@@ -515,7 +496,8 @@ $c_allow = $user_group[$member_id['user_group']]['collections_allow_edit'];
 if( !$c_allow AND $member_id['user_group'] != "1" ) {
 	$tpl->set_block( "'\\[owner-c\\].*?\\[/owner-c\\]'si", '' );
 } else {
- 	$tpl->set( '{collections}', $collections_list );
+    if( count($collections_info) ) $tpl->set( '{collections}', $collections_list );
+    else $tpl->set( '{collections}', 'Подборок не создано' );
 	$tpl->set( '[owner-c]', '' );
 	$tpl->set( '[/owner-c]', '' );  
 }]]></replacecode>
