@@ -783,9 +783,9 @@ $c_list = $db->safesql( implode( ',', $c_list ) );]]></replacecode>
           
  		  $row['name'] = stripslashes( $row['name'] );
 
-		  $tpl->set( '{name}', str_replace("&amp;amp;", "&amp;",  htmlspecialchars( $row['name'], ENT_QUOTES, $config['charset'] ) ) );
+		  $tpl->set( '{title}', str_replace("&amp;amp;", "&amp;",  htmlspecialchars( $row['name'], ENT_QUOTES, $config['charset'] ) ) );
 
-		  if ( preg_match( "#\\{name limit=['\"](.+?)['\"]\\}#i", $tpl->copy_template, $matches ) ) {
+		  if ( preg_match( "#\\{title limit=['\"](.+?)['\"]\\}#i", $tpl->copy_template, $matches ) ) {
 			$count= intval($matches[1]);
 			$row['name'] = strip_tags( $row['name'] );
 
