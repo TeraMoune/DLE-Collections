@@ -254,11 +254,12 @@ else $next = $url_page . '/page/' . $next_page . '/';]]></replacecode>
 				
 		$collections[] = $collections_info[$collections_list[0]]['name'];
       
-		if( $config['allow_alt_url'] )		
-			$collections_link = "<a href=\"" . $config['http_home_url'] . "collections/{$collections_info[$collections_list[0]]['id']}-{$collections_info[$collections_list[0]]['alt_url']}" . "\">{$collections_info[$collections_list[0]]['name']}</a>";
-		else		
-      		$collections_link = "<a href=\"$PHP_SELF?do=collections&amp;id={$collections_info[$collections_list[0]]['id']}\">{$collections_info[$collections_list[0]]['name']}</a>";
-          
+		if( $config['allow_alt_url'] )	{	
+			$collections_link[] = "<a href=\"" . $config['http_home_url'] . "collections/{$collections_info[$collections_list[0]]['id']}-{$collections_info[$collections_list[0]]['alt_url']}" . "\">{$collections_info[$collections_list[0]]['name']}</a>";
+        } else {		
+      		$collections_link[] = "<a href=\"$PHP_SELF?do=collections&amp;id={$collections_info[$collections_list[0]]['id']}\">{$collections_info[$collections_list[0]]['name']}</a>";
+        }
+      
 	} else {
 				
 		foreach ( $collections_list as $element ) {
@@ -266,17 +267,18 @@ else $next = $url_page . '/page/' . $next_page . '/';]]></replacecode>
 			if( $element ) {
 				$collections[] = $collections_info[$element]['name'];
               
-				if( $config['allow_alt_url'] )		
-					$collections_link = "<a href=\"" . $config['http_home_url'] . "collections/{$collections_info[$element]['id']}-{$collections_info[$element]['alt_url']}" . "\">{$collections_info[$element]['name']}</a>";
-				else		
+				if( $config['allow_alt_url'] )	{	
+					$collections_link[] = "<a href=\"" . $config['http_home_url'] . "collections/{$collections_info[$element]['id']}-{$collections_info[$element]['alt_url']}" . "\">{$collections_info[$element]['name']}</a>";
+                } else	{	
       				$collections_link[] = "<a href=\"$PHP_SELF?do=collections&amp;id={$collections_info[$element]['id']}\">{$collections_info[$element]['name']}</a>";
+                }
               
 			}
 		}
-				
-		$collections_link = implode( "{$config['collection_separator']}", $collections_link );
+
 	}
-			
+		
+  	$collections_link = implode( "{$config['collection_separator']}", $collections_link );
 	$collections = implode( "{$config['collection_separator']}", $collections );
 
     $tpl->set( '{collections-link}', 'Подборки: ' . $collections_link );
