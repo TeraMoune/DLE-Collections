@@ -1,13 +1,13 @@
 <?xml version="1.0" encoding="utf-8"?>
 <dleplugin>
 	<name>Collections</name>
-	<description>Подборки для DataLife Engine. По вопросам: teramoune@gmail.com</description>
+	<description>Подборки для DataLife Engine. teramoune@gmail.com</description>
 	<icon></icon>
-	<version>0.2</version>
+	<version></version>
 	<dleversion>13</dleversion>
 	<versioncompare>greater</versioncompare>
 	<upgradeurl></upgradeurl>
-	<filedelete>0</filedelete>
+	<filedelete>1</filedelete>
 	<needplugin></needplugin>
 	<mysqlinstall><![CDATA[CREATE TABLE {prefix}_news_collections (
   `id` int(11) NOT NULL auto_increment,
@@ -20,6 +20,8 @@
   `create_date` datetime NOT NULL DEFAULT '0000-00-00 00:00:00',
   `cover` varchar(255) NOT NULL DEFAULT '',
   `news_ids` text NOT NULL,
+  `current_tags` text NOT NULL,
+  `current_xfields` text NOT NULL,
   `keywords` text NOT NULL,
   `metatitle` varchar(255) NOT NULL DEFAULT '',
   PRIMARY KEY (`id`),
@@ -234,6 +236,21 @@ else
 }]]></replacecode>
 		</operation>
 		<operation action="replace">
+			<searchcode><![CDATA[if ($user_query) $prev_page = $PHP_SELF . "?cstart=" . $prev . "&amp;" . $user_query;
+else $prev_page = $PHP_SELF . "?cstart=" . $prev;]]></searchcode>
+			<replacecode><![CDATA[if( $do == 'collections' ) {
+  
+  if ($user_query) $prev_page = $PHP_SELF . $ucid ."&cstart=" . $prev . "&amp;" . $user_query;
+  else $prev_page = $PHP_SELF . $ucid . "&cstart=" . $prev; 
+  
+} else {
+
+  if ($user_query) $prev_page = $PHP_SELF . "?cstart=" . $prev . "&amp;" . $user_query;
+  else $prev_page = $PHP_SELF . "?cstart=" . $prev;  
+  
+}]]></replacecode>
+		</operation>
+		<operation action="replace">
 			<searchcode><![CDATA[$next = $url_page . '/page/' . $next_page . '/';]]></searchcode>
 			<replacecode><![CDATA[if( $do == 'collections' ) $next = $url_page . '/page/' . $next_page;
 else $next = $url_page . '/page/' . $next_page . '/';]]></replacecode>
@@ -243,7 +260,16 @@ else $next = $url_page . '/page/' . $next_page . '/';]]></replacecode>
 		<operation action="after">
 			<searchcode><![CDATA[if ($config['category_separator'] != ',') $config['category_separator'] = ' '.$config['category_separator'];]]></searchcode>
 			<replacecode><![CDATA[if( !$row['collections'] ) {
-  	$tpl->set_block( "'\\[not-collections\\](.*?)\\[/not-collections\\]'si", "" );
+  
+  	if( $row['tags'] OR $row['xfields'] ) search_collections();
+  	else {
+      
+        $tpl->set( '{collections-link}', 'Подборки: Не заданы' );
+        $tpl->set( '{collections}', 'Подборки: Не заданы' );  
+        $tpl->set_block( "'\\[not-collections\\](.*?)\\[/not-collections\\]'si", "" );
+      
+    }
+  
 } else {
 			
 	$collections = array ();
@@ -254,7 +280,7 @@ else $next = $url_page . '/page/' . $next_page . '/';]]></replacecode>
 				
 		$collections[] = $collections_info[$collections_list[0]]['name'];
       
-		if( $config['allow_alt_url'] )	{	
+		if( $config['allow_alt_url'] ) {		
 			$collections_link[] = "<a href=\"" . $config['http_home_url'] . "collections/{$collections_info[$collections_list[0]]['id']}-{$collections_info[$collections_list[0]]['alt_url']}" . "\">{$collections_info[$collections_list[0]]['name']}</a>";
         } else {		
       		$collections_link[] = "<a href=\"$PHP_SELF?do=collections&amp;id={$collections_info[$collections_list[0]]['id']}\">{$collections_info[$collections_list[0]]['name']}</a>";
@@ -267,25 +293,79 @@ else $next = $url_page . '/page/' . $next_page . '/';]]></replacecode>
 			if( $element ) {
 				$collections[] = $collections_info[$element]['name'];
               
-				if( $config['allow_alt_url'] )	{	
-					$collections_link[] = "<a href=\"" . $config['http_home_url'] . "collections/{$collections_info[$element]['id']}-{$collections_info[$element]['alt_url']}" . "\">{$collections_info[$element]['name']}</a>";
-                } else	{	
+				if( $config['allow_alt_url'] ) {	
+					$collections_link = "<a href=\"" . $config['http_home_url'] . "collections/{$collections_info[$element]['id']}-{$collections_info[$element]['alt_url']}" . "\">{$collections_info[$element]['name']}</a>";
+                } else {	
       				$collections_link[] = "<a href=\"$PHP_SELF?do=collections&amp;id={$collections_info[$element]['id']}\">{$collections_info[$element]['name']}</a>";
                 }
-              
+
 			}
+          
 		}
 
 	}
-		
-  	$collections_link = implode( "{$config['collection_separator']}", $collections_link );
+  
+  	search_collections(1);
+	$collections_link = implode( "{$config['collection_separator']}", $collections_link );		
 	$collections = implode( "{$config['collection_separator']}", $collections );
 
     $tpl->set( '{collections-link}', 'Подборки: ' . $collections_link );
    	$tpl->set( '{collections}', 'Подборки: ' . $collections );
   	$tpl->set( '[not-collections]', "" );
 	$tpl->set( '[/not-collections]', "" );
+}
+
+$c_allow = $user_group[$member_id['user_group']]['collections_allow_edit'];
+		
+if( !$c_allow AND $member_id['user_group'] != "1" ) {
+  
+	$tpl->set_block( "'\\[add-collections\\](.*?)\\[/add-collections\\]'si", "" );
+  
+} else {
+  
+  	$tpl->set( '[add-collections]', "<a href=\"javascript:editCollections('" . $row['id'] . "')\" title=\"Добавить в подборки\">" );
+	$tpl->set( '[/add-collections]', "</a>" );
+  
 }]]></replacecode>
+		</operation>
+		<operation action="before">
+			<searchcode><![CDATA[if (stripos ( $tpl->result['content'], "[hide" ) !== false ) {]]></searchcode>
+			<replacecode><![CDATA[$ajax .= <<<HTML
+<script>
+function editCollections( id, action ){
+	ShowLoading('');
+	$.post('engine/ajax/controller.php?mod=collections_menu', { news_id: id, action: action, user_hash: dle_login_hash }, function(data){
+	
+		if( data == 'error' ){
+			alert(data);
+		} else {
+				  
+			$.magnificPopup.open({
+			items: {
+				src: data
+			},
+			type: 'inline',
+			mainClass: 'mfp-fade',
+			removalDelay: 170,
+			overflowY: 'hide',
+			closeOnBgClick: true,
+			showCloseBtn: true,
+			callbacks: {
+				open: function() {},
+				afterClose: function() {},		 
+				beforeClose: function() {}
+			}		
+			});					  
+			
+		}	
+	
+	HideLoading('');
+	
+	});
+
+};
+</script>
+HTML;]]></replacecode>
 		</operation>
 	</file>
 	<file name="engine/init.php">
@@ -306,7 +386,7 @@ else $next = $url_page . '/page/' . $next_page . '/';]]></replacecode>
 if (!is_array ( $collections_info )) {
 	$collections_info = array ();
 
-	$db->query ( "SELECT id, user_name, name, alt_url, descr, num_elem, date, create_date, cover FROM " . PREFIX . "_news_collections ORDER BY id ASC" );
+	$db->query ( "SELECT id, user_name, name, alt_url, descr, num_elem, date, create_date, cover, current_tags, current_xfields FROM " . PREFIX . "_news_collections ORDER BY id ASC" );
 	while ( $row = $db->get_row () ) {
 
 		$collections_info[$row['id']] = array ();
@@ -679,7 +759,20 @@ $c_list = $db->safesql( implode( ',', $c_list ) );]]></replacecode>
 	<file name="engine/modules/main.php">
 		<operation action="before">
 			<searchcode><![CDATA[$tpl->copy_template = str_replace ( "{topnews}", $tpl->result['topnews'], $tpl->copy_template );]]></searchcode>
-			<replacecode><![CDATA[if (stripos ( $tpl->copy_template, "{collections" ) !== false) {
+			<replacecode><![CDATA[if( $collections_id ) {
+  $tpl->set( '{c-title}', $collections['name'] );
+  if( $collections['descr'] ) {
+    $collections['descr'] = stripslashes($collections['descr']);
+    $tpl->set( '{c-descr}', $collections['descr'] );
+  } else $tpl->set( '{c-descr}', '' );
+  $tpl->set( '[collections-show]', '' );
+  $tpl->set( '[/collections-show]', '' );
+} else {
+  $tpl->set_block( "'\\[collections-show\\](.*?)\\[/collections-show\\]'si", "" );
+  $tpl->set( '{c-title}', '' );
+  $tpl->set( '{c-descr}', '' );
+}
+if (stripos ( $tpl->copy_template, "{collections" ) !== false) {
 	$tpl->copy_template = preg_replace_callback ( "#\\{collections(.+?)?\\}#i", "show_collections", $tpl->copy_template );
 }]]></replacecode>
 		</operation>
@@ -687,7 +780,92 @@ $c_list = $db->safesql( implode( ',', $c_list ) );]]></replacecode>
 	<file name="engine/modules/functions.php">
 		<operation action="before">
 			<searchcode><![CDATA[function custom_print( $matches=array() ) {]]></searchcode>
-			<replacecode><![CDATA[function show_collections( $matches=array() ) {
+			<replacecode><![CDATA[function search_collections( $t = false ) {
+	global $collections_info, $collections_link, $collections, $tpl, $config, $row;
+  
+  	if( !$t ) {
+      
+      $collections = array ();
+      $collections_link = array ();	
+      $collections_list = array();
+      
+    } else $collections_list = array();
+  
+  	foreach( $collections_info as $val) {
+      
+		if( $val['current_tags'] ) {
+			
+			$s_t = explode(', ', $val['current_tags']);
+			if( preg_match("/" . implode('|', $s_t) . "/i", $tags) ) $collections_list[] = $val['id'];
+
+		} else if( $val['current_xfields'] ) {
+			
+			$s_t = explode('||', $val['current_xfields']);
+			
+			if( preg_match("/" . addslashes( implode('|', $s_t) ) . "/i", $row['xfields']) ) $collections_list[] = $val['id'];
+			
+		}
+      
+    }  
+  
+  	if( count($collections_list) ) {	
+  
+	$config['collection_separator'] = $config['collection_separator'] ? $config['collection_separator'] : ',';	
+	if( count( $collections_list ) == 1 ) {
+				
+		$collections[] = $collections_info[$collections_list[0]]['name'];
+      
+		if( $config['allow_alt_url'] ) {		
+			$collections_link[] = "<a href=\"" . $config['http_home_url'] . "collections/{$collections_info[$collections_list[0]]['id']}-{$collections_info[$collections_list[0]]['alt_url']}" . "\">{$collections_info[$collections_list[0]]['name']}</a>";
+        } else {		
+      		$collections_link[] = "<a href=\"$PHP_SELF?do=collections&amp;id={$collections_info[$collections_list[0]]['id']}\">{$collections_info[$collections_list[0]]['name']}</a>";
+        }
+      
+	} else {
+				
+		foreach ( $collections_list as $element ) {
+					
+			if( $element ) {
+				$collections[] = $collections_info[$element]['name'];
+              
+				if( $config['allow_alt_url'] ) {	
+					$collections_link = "<a href=\"" . $config['http_home_url'] . "collections/{$collections_info[$element]['id']}-{$collections_info[$element]['alt_url']}" . "\">{$collections_info[$element]['name']}</a>";
+                } else {	
+      				$collections_link[] = "<a href=\"$PHP_SELF?do=collections&amp;id={$collections_info[$element]['id']}\">{$collections_info[$element]['name']}</a>";
+                }
+
+			}
+          
+		}  
+  
+    }
+
+    if( !$t ) {
+      
+        $collections_link = implode( "{$config['collection_separator']}", $collections_link );		
+        $collections = implode( "{$config['collection_separator']}", $collections );
+
+        $tpl->set( '{collections-link}', 'Подборки: ' . $collections_link );
+        $tpl->set( '{collections}', 'Подборки: ' . $collections );
+        $tpl->set( '[not-collections]', "" );
+        $tpl->set( '[/not-collections]', "" );
+      
+    }
+      
+    } else {
+      
+      if( !$t ) {
+        
+        $tpl->set( '{collections-link}', 'Подборки: Не заданы' );
+        $tpl->set( '{collections}', 'Подборки: Не заданы' );  
+        $tpl->set_block( "'\\[not-collections\\](.*?)\\[/not-collections\\]'si", "" );
+        
+      }
+      
+    }
+}
+
+function show_collections( $matches=array() ) {
 	global $db, $config, $_TIME;
 	
 	$param_str = trim($matches[1]);
@@ -918,7 +1096,7 @@ $c_list = $db->safesql( implode( ',', $c_list ) );]]></replacecode>
 </tr>]]></searchcode>
 			<replacecode><![CDATA[<tr>
     <td><h6 class="media-heading text-semibold">Разрешение группе редактировать подборки</h6></td>
-    <td><input class="switch" type="checkbox" name="collections_allow_edit" {$collections_allow_edit} value="1" {$gastgroup}></td>
+    <td><input class="switch" type="checkbox" name="collections_allow_edit" {$collections_allow_edit} value="1" {$admingroup}></td>
 </tr>]]></replacecode>
 		</operation>
 	</file>
