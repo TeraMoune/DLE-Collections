@@ -534,7 +534,7 @@ HTML;
 		$js_array[] = "engine/classes/js/typograf.min.js";
 	}
 	
-	$js_array[] = "engine/classes/uploads/html5/fileuploader.js?v=24";
+	$js_array[] = "engine/classes/uploads/html5/fileuploader.js";
 	
 	echoheader( $lang['media_gallery_settings'], $lang['media_gallery_desc'] );
 
@@ -1125,7 +1125,7 @@ HTML;
 		$js_array[] = "engine/classes/js/typograf.min.js";
 	}
 
-	$js_array[] = "engine/classes/uploads/html5/fileuploader.js?v=24";
+	$js_array[] = "engine/classes/uploads/html5/fileuploader.js";
 	
 	echoheader( "<i class=\"fa fa-pencil-square-o position-left\"></i><span class=\"text-semibold\">Редактирование подборки</span>", array($_SESSION['admin_referrer'] => $lang['edit_all_title'], '' => "Редактирование подборки" ) );	
 	
