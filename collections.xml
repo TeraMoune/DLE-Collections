@@ -1146,7 +1146,7 @@ function show_collections( $matches=array() ) {
 	return false;
 
 }]]></searchcode>
-			<replacecode><![CDATA[function get_vars($file, $path) {
+			<replacecode><![CDATA[function get_vars($file, $path = false) {
 	$file = totranslit($file, true, false);
 
 	if(!$path) $data = @file_get_contents( ENGINE_DIR . '/cache/system/' . $file . '.php' );
