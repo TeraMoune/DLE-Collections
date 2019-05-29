@@ -908,6 +908,14 @@ HTML;
 				$title_p[$val['id']] = $val['title'];
 				
 			}
+			
+			if( !is_dir( ROOT_DIR . "/engine/cache/system/collections_title" ) ) {
+
+				@mkdir( ROOT_DIR . "/engine/cache/system/collections_title", 0777 );
+				@chmod( ROOT_DIR . "/engine/cache/system/collections_title", 0777 );
+
+			}			
+			
 			set_vars ( "collections_title_" . $row['id'], $title_p, "/cache/system/collections_title/" );
 		}
 		
