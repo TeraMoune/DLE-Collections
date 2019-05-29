@@ -52,7 +52,7 @@ if( $collections_id ) {
 
 	if ( $config['allow_cache'] AND $cache_id <= $config['max_cache_pages'] ) {
 		
-		$active = dle_cache( "collections_news", $cache_id, true );
+		$active = dle_cache( "collections_news_" . $collections_id, $cache_id, true );
 		$short_news_cache = true;
 		
 	} else {
@@ -114,7 +114,7 @@ if( $collections_id ) {
 			$tpl->result['content'] = show_attach ( $tpl->result['content'], $attachments );
 		}
 				
-		if ($news_found AND $cache_id <= $config['max_cache_pages'] ) create_cache ( "collections_news", $tpl->result['content'], $cache_id . $cache_prefix, true );
+		if ($news_found AND $cache_id <= $config['max_cache_pages'] ) create_cache ( "collections_news_" . $collections_id, $tpl->result['content'], $cache_id, true );
 
 	}
 	
