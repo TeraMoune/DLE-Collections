@@ -673,7 +673,7 @@ $c_list = $db->safesql( implode( ',', $c_list ) );]]></replacecode>
   $tmp_c = explode( ',', $item_db[9] );
   $addC_tmp = array_diff ($c_list, $tmp_c);
   $removeC_tmp = array_diff ($tmp_c, $c_list);  
-
+  $thistime = date( "Y-m-d H:i:s", time() );
   if( count($addC_tmp) ) {
 
     foreach( $addC_tmp as $val ) {
