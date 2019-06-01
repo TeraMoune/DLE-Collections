@@ -87,4 +87,15 @@ RewriteRule ^collections(/?)$ index.php?do=collections [L]
 <img src="https://user-images.githubusercontent.com/44625352/55650574-6039b500-57e6-11e9-83e6-daaff65c6129.png" width="430">
 </p>
 
+# Donate
+Для материальной благодарности.
+
+<img src="https://qiwi.com/favicon.ico" width="16" height="16"> [Qiwi](https://qiwi.me/teramoune)
+
+<img src="https://www.webmoney.ru/img/logo-wm-sat-small.png" width="139" height="34">
+
+ - R425445633105
+ - Z990082286464
+ - B694053117066
+ 
 teramoune@gmail.com на всякий случай.
