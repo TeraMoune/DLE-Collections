@@ -96,6 +96,5 @@ RewriteRule ^collections(/?)$ index.php?do=collections [L]
 
  - R425445633105
  - Z990082286464
- - B694053117066
  
 teramoune@gmail.com на всякий случай.
