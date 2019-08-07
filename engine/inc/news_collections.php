@@ -13,12 +13,12 @@ if( !defined( 'DATALIFEENGINE' ) OR !defined( 'LOGGED_IN' ) ) {
 	
 	if( $action == "list") {
   
-	$lang['tabs_gr_all'] = $lang['header_tm_1'];
-	$menu_active_list = " class=\"active\"";
-	$menu_active_settings = "";
-	$add_template = "<div style=\"display:inline-block;\">
-     <a href=\"#\" data-toggle=\"modal\" data-target=\"#addCollections\"><i class=\"fa fa-plus-circle\"></i> Создание новой подборки</a>
-	</div>";
+		$lang['tabs_gr_all'] = $lang['header_tm_1'];
+		$menu_active_list = " class=\"active\"";
+		$menu_active_settings = "";
+		$add_template = "<div style=\"display:inline-block;\">
+		 <a href=\"#\" data-toggle=\"modal\" data-target=\"#addCollections\"><i class=\"fa fa-plus-circle\"></i> Создание новой подборки</a>
+		</div>";
   
 	}
 
@@ -166,7 +166,9 @@ if( $action == "settings" ) {
 	
 	}
 
-	$db->query( "INSERT INTO " . USERPREFIX . "_admin_logs (name, date, ip, action, extras) values ('".$db->safesql($member_id['name'])."', '{$_TIME}', '{$_IP}', '48', 'Изменение настроек подборок')" );
+	if( $config['collections_log'] ) {
+		$db->query( "INSERT INTO " . USERPREFIX . "_admin_logs (name, date, ip, action, extras) values ('".$db->safesql($member_id['name'])."', '{$_TIME}', '{$_IP}', '48', 'Изменение настроек подборок')" );
+	}
 	
 	$save_con = $_POST['save_con'];
     $save_con['collection_news_number'] = intval($save_con['collection_news_number']);	
@@ -345,7 +347,7 @@ HTML;
 			
 		}	
 
-		$sql_result = $db->query( "SELECT user_id, favorites FROM " . USERPREFIX . "_users WHERE favorites_collections LIKE '%{$id}%'" );
+		$sql_result = $db->query( "SELECT user_id, favorites_collections FROM " . USERPREFIX . "_users WHERE favorites_collections LIKE '%{$id}%'" );
 		
 		while ( $c_list = $db->get_row($sql_result) ) {
 			
@@ -468,7 +470,7 @@ HTML;
 
 	$id = $db->insert_id();
 	
-	if( $config['collections_log'] ) $db->query( "INSERT INTO " . USERPREFIX . "_admin_logs (name, date, ip, action, extras) values ('".$db->safesql($member_id['name'])."', '{$_TIME}', '{$_IP}', '48', 'Добавление новой подборки: <a href=\"{$config['http_home_url']}admin.php?mod=news_collections&action=edit&id={$id}\">" . $db->safesql($name) . "</a>')" );	
+	if( $config['collections_log'] ) $db->query( "INSERT INTO " . USERPREFIX . "_admin_logs (name, date, ip, action, extras) values ('".$db->safesql($member_id['name'])."', '{$_TIME}', '{$_IP}', '48', 'Добавление новой подборки: <a href=\"{$config['http_home_url']}{$config['admin_path']}?mod=news_collections&action=edit&id={$id}\">" . $db->safesql($name) . "</a>')" );	
 	
 	if( $news_ids ) {
 		
@@ -599,6 +601,10 @@ HTML;
 		<div class="col-sm-12">
           <label>Теги</label>
 		  <input id="current_tags" name="current_tags" type="text" class="form-control" autocomplete="off">
+        </div>
+		<div class="col-sm-12">
+          <label>Дополнительные поля</label>
+		  <input id="current_xfields" name="current_xfields" type="text" class="form-control" autocomplete="off">
         </div>		
         <div class="col-sm-6">
           <label>Мета тег TITLE</label>
@@ -767,7 +773,7 @@ function checkxf ()	{
 
 	    DLEconfirm( 'Вы уверены, что хотите удалить <b>&laquo;'+name+'&raquo;</b> из подборок ?', '{$lang['p_confirm']}', function () {
 
-		$.post('/admin.php?mod=news_collections&action=list', {id: id, is:'delete', user_hash:'{$dle_login_hash}'}, function(data) {
+		$.post('/{$config['admin_path']}?mod=news_collections&action=list', {id: id, is:'delete', user_hash:'{$dle_login_hash}'}, function(data) {
 			
         if(data == 'ok'){
           $('#content_'+ id).parent().remove();
@@ -782,7 +788,7 @@ function checkxf ()	{
 
 	new qq.FileUploader({
 		element: document.getElementById('uploads_poster'),
-		action: 'admin.php?mod=news_collections&action=upload_poster',
+		action: '/{$config['admin_path']}?mod=news_collections&action=upload_poster',
 		maxConnections: 1,
 		multiple: false,
 		allowdrop: false,
@@ -908,14 +914,6 @@ HTML;
 				$title_p[$val['id']] = $val['title'];
 				
 			}
-			
-			if( !is_dir( ROOT_DIR . "/engine/cache/system/collections_title" ) ) {
-
-				@mkdir( ROOT_DIR . "/engine/cache/system/collections_title", 0777 );
-				@chmod( ROOT_DIR . "/engine/cache/system/collections_title", 0777 );
-
-			}			
-			
 			set_vars ( "collections_title_" . $row['id'], $title_p, "/cache/system/collections_title/" );
 		}
 		
@@ -979,7 +977,7 @@ HTML;
 		msg( "error", array('javascript:history.go(-1)' => "Сохранение подборки", '' => $lang['addnews_error'] ), "Слишком длинное имя.", "javascript:history.go(-1)" );
 	}
 	
-	if( $config['collections_log'] ) $db->query( "INSERT INTO " . USERPREFIX . "_admin_logs (name, date, ip, action, extras) values ('".$db->safesql($member_id['name'])."', '{$_TIME}', '{$_IP}', '48', 'Изменение подборки: <a href=\"{$config['http_home_url']}admin.php?mod=news_collections&action=edit&id={$id}\">" . $db->safesql($name) . "</a>')" );
+	if( $config['collections_log'] ) $db->query( "INSERT INTO " . USERPREFIX . "_admin_logs (name, date, ip, action, extras) values ('".$db->safesql($member_id['name'])."', '{$_TIME}', '{$_IP}', '48', 'Изменение подборки: <a href=\"{$config['http_home_url']}{$config['admin_path']}?mod=news_collections&action=edit&id={$id}\">" . $db->safesql($name) . "</a>')" );
 		
 	$db->query("UPDATE ".PREFIX."_news_collections SET name = '{$name}', alt_url = '{$alt_url}', descr = '{$descr}', news_ids = '{$news_ids}', current_tags = '{$current_tags}', current_xfields = '{$current_xfields}', num_elem = '{$num_elem}', metatitle = '{$metatags['title']}', keywords = '{$metatags['keywords']}', cover = '{$poster}', date = '{$thistime}' WHERE id = '{$id}'");	
 
@@ -1043,6 +1041,7 @@ HTML;
 	}
 	
 	@unlink( ENGINE_DIR . '/cache/system/collections.php' );
+	clear_cache( array('collections_news_', 'cblock_list_') );
 	msg( "success", "Подборка изменена", "Подборка" . " \"" . stripslashes( stripslashes( $name ) ) . "\" " . "изменена ", array('?mod=news_collections&action=list' => 'Назад к списку' ) );
 
 	}
@@ -1094,6 +1093,14 @@ HTML;
 		foreach( $post as $val ) {
 			$tmp_news_ids[$val['id']] = $val['title'];
 		}
+		
+		if( !is_dir( ROOT_DIR . "/engine/cache/system/collections_title" ) ) {
+			
+			@mkdir( ROOT_DIR . "/engine/cache/system/collections_title", 0777 );
+			@chmod( ROOT_DIR . "/engine/cache/system/collections_title", 0777 );
+
+		}
+		
 		set_vars ( "collections_title_" . $row['id'], $tmp_news_ids, "/cache/system/collections_title/" );		
 		
 	}
@@ -1114,9 +1121,16 @@ HTML;
 			$img_url = 	$config['http_home_url'] . "uploads/posts/" . $path_parts['dirname']."/".$path_parts['basename'];
 		}
 				
-		$up_image = "<div class=\"uploadedfile\"><div class=\"info\">{$path_parts['basename']}</div><div class=\"uploadimage\"><img style=\"width:auto;height:auto;max-width:100px;max-height:90px;\" src=\"" . $img_url . "\" /></div><div class=\"info\"><a href=\"#\" onclick=\"imagedelete(\\'".$row['cover']."\\');return false;\">Удалить</a></div></div>";
-			
-	} else $up_image = "";	
+		$up_image = "<div class=\"uploadedfile\"><div class=\"info\">{$path_parts['basename']}</div><div class=\"uploadimage\"><img style=\"width:auto;height:auto;max-width:130px;max-height:100px;\" src=\"" . $img_url . "\" /></div><div class=\"info\"><a href=\"#\" onclick=\"imagedelete(\\'".$row['cover']."\\');return false;\">Удалить</a></div></div>";
+		$up_image_del = "<div class=\"uploadedfile no-image\"><div class=\"info\">{$path_parts['basename']}</div><div class=\"uploadimage\"><img style=\"width:auto;height:auto;max-width:130px;max-height:100px;\" src=\"/engine/skins/images/no_image.gif\" /></div></div>";
+		$poster_exist = "display:none;";
+		
+	} else {
+		
+		$up_image = $up_image_del = "<div class=\"uploadedfile no-image\"><div class=\"info\">{$path_parts['basename']}</div><div class=\"uploadimage\"><img style=\"width:auto;height:auto;max-width:130px;max-height:100px;\" src=\"/engine/skins/images/no_image.gif\" /></div></div>";
+		$poster_exist = "";
+		
+	}
 	
 	if( $config['allow_admin_wysiwyg'] == 1 ) {
 		$js_array[] = "engine/skins/codemirror/js/code.js";
@@ -1152,7 +1166,7 @@ HTML;
     <div class="modal-content">
       <div class="modal-header ui-dialog-titlebar">
         <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
-    <span class="ui-dialog-title" id="newcatsLabel">Добавление новой подборки</span>
+		<span class="ui-dialog-title" id="newcatsLabel">Поиск новостей</span>
       </div>
       <div class="modal-body">
     
@@ -1184,7 +1198,16 @@ HTML;
 			<form method="post" class="form-horizontal" name="addnews" id="addnews" onsubmit="if(checkxf()=='fail') return false;" action="">
                  <div class="panel-tab-content tab-content">
 						<div class="panel-body">
-
+						
+						<div class="form-group bl-poster">
+						<div style="padding-left: 10px;padding-right: 10px;">
+								<div id="uploaded_poster"></div>
+								<div id="uploads_poster"></div>
+								<input type="hidden" name="poster" id="poster" value="{$row['cover']}" />
+						</div>
+						</div>		
+							 
+						<div class="bl-r">
 							<div class="form-group">
 							  <label class="control-label col-sm-2">Название</label>
 							  <div class="col-sm-10">
@@ -1198,7 +1221,22 @@ HTML;
 								<input type="text" class="form-control" name="alt_url" id="alt_url" value="{$row['alt_url']}" autocomplete="off" maxlength="190">
 							  </div>
 							 </div>
+							 
+							<div class="form-group">
+							  <label class="control-label col-sm-2">Мета тег TITLE</label>
+							  <div class="col-sm-10">
+								<input type="text" class="form-control" name="meta_title" id="meta_title" value="{$row['metatitle']}" autocomplete="off" maxlength="190">
+							  </div>
+							 </div>
 
+							<div class="form-group">
+							  <label class="control-label col-sm-2">Мета тег KEYWORDS</label>
+							  <div class="col-sm-10">
+								<input type="text" class="form-control" name="keywords" id="keywords" value="{$row['keywords']}" autocomplete="off" maxlength="190">
+							  </div>
+							 </div>								 
+						</div>
+						<div class="bl-l">
 							<div class="form-group">
 							  <label class="control-label col-sm-2">Новости (<a href="#" data-toggle="modal" data-target="#search_news">Найти ?</a>)</label>
 							  <div class="col-sm-10">
@@ -1218,21 +1256,7 @@ HTML;
 							  <div class="col-sm-10">
 								<input id="current_xfields" name="current_xfields" type="text" class="form-control" value="{$row['current_xfields']}" autocomplete="off">
 							  </div>
-							 </div>							 
-
-							<div class="form-group">
-							  <label class="control-label col-sm-2">Мета тег TITLE</label>
-							  <div class="col-sm-10">
-								<input type="text" class="form-control" name="meta_title" id="meta_title" value="{$row['metatitle']}" autocomplete="off" maxlength="190">
-							  </div>
-							 </div>
-
-							<div class="form-group">
-							  <label class="control-label col-sm-2">Мета тег KEYWORDS</label>
-							  <div class="col-sm-10">
-								<input type="text" class="form-control" name="keywords" id="keywords" value="{$row['keywords']}" autocomplete="off" maxlength="190">
-							  </div>
-							 </div>							 
+							 </div>						 
 							 
 							 <div class="form-group editor-group">
 							  <label class="control-label col-md-2">Описание</label>
@@ -1255,14 +1279,7 @@ HTML;
 echo <<<HTML
 							  </div>
 							</div>
-							<div class="form-group">
-							  <label class="control-label col-sm-2">Постер</label>
-							  <div class="col-sm-10">
-								<div id="uploaded_poster"></div>
-								<div id="uploads_poster"></div>
-								<input type="hidden" name="poster" id="poster" value="{$row['cover']}" />
-							  </div>
-							 </div>								
+							</div>							
 						</div>
 				</div>
 				<div class="panel-footer">
@@ -1303,11 +1320,12 @@ function imagedelete( value ) {
 		
 			ShowLoading('');
 			
-			$.post('admin.php?mod=news_collections&action=upload_poster', { is: 'delete', user_hash: '{$dle_login_hash}', poster:value, c_id: {$id} }, function(data){
+			$.post('/{$config['admin_path']}?mod=news_collections&action=upload_poster', { is: 'delete', user_hash: '{$dle_login_hash}', poster:value, c_id: {$id} }, function(data){
 	
 				HideLoading('');
 				
-				$('#uploadedfile_poster').html('');
+				$('.qq-upload-button').css({'display':'inline-block'})
+				$('#uploadedfile_poster').html('{$up_image_del}');
 				$('#poster').val('');
 
 			});
@@ -1322,7 +1340,7 @@ function imagedelete( value ) {
 	  
 	$('#news_ids').tokenfield({
 	  autocomplete: {
-	    source: 'engine/ajax/controller.php?mod=find_news&user_hash={$dle_login_hash}',
+	    source: '/engine/ajax/controller.php?mod=find_news&user_hash={$dle_login_hash}',
 		minLength: 3,
 		delimiter: ',',
 	    delay: 500
@@ -1332,7 +1350,7 @@ function imagedelete( value ) {
 	
 	$('#current_tags, #search_current_tags').tokenfield({
 	  autocomplete: {
-	    source: 'engine/ajax/controller.php?mod=find_tags&user_hash={$dle_login_hash}',
+	    source: '/engine/ajax/controller.php?mod=find_tags&user_hash={$dle_login_hash}',
 		minLength: 2,
 		delimiter: ',',
 	    delay: 500
@@ -1346,9 +1364,7 @@ function imagedelete( value ) {
 		tags = $('#search_news #search_current_tags').val();
 		xfields = $('#search_news #xfields').val();
 
-	   
-
-		$.post('engine/ajax/controller.php?mod=find_news', {user_hash:'{$dle_login_hash}', type: 1, name: name, tags: tags, xfields: xfields}, function(data) {
+		$.post('/engine/ajax/controller.php?mod=find_news', {user_hash:'{$dle_login_hash}', type: 1, name: name, tags: tags, xfields: xfields}, function(data) {
 			
         if(data){
 			$('#search_news').modal('hide');	
@@ -1367,7 +1383,7 @@ function imagedelete( value ) {
 	
 	new qq.FileUploader({
 		element: document.getElementById('uploads_poster'),
-		action: 'admin.php?mod=news_collections&action=upload_poster',
+		action: '/{$config['admin_path']}?mod=news_collections&action=upload_poster',
 		maxConnections: 1,
 		multiple: false,
 		allowdrop: false,
@@ -1377,7 +1393,7 @@ function imagedelete( value ) {
 	    params: {"user_hash" : "{$dle_login_hash}", "id" : "{$id}"},
         template: '<div class="qq-uploader">' + 
                 '<div id="uploadedfile_poster" class="clrfix">{$up_image}</div>' +
-                '<div class="qq-upload-button btn btn-green bg-teal btn-sm btn-raised" style="width: auto;">Загрузить изображение</div>' +
+                '<div class="qq-upload-button btn btn-green bg-teal btn-sm btn-raised" style="width: auto;{$poster_exist}">Загрузить изображение</div>' +
                 '<ul class="qq-upload-list" style="display:none;"></ul>' + 
              '</div>',
 		onSubmit: function(id, fileName) {
@@ -1430,6 +1446,25 @@ function imagedelete( value ) {
 	
   });
 </script> 
+<style>
+.uploadedfile {width: 145px; height: 150px;}
+.uploadedfile .uploadimage {width: 145px; height: 114px;}
+.uploadedfile .uploadimage:hover {cursor:default;}
+.uploadedfile.no-image {height: 115px;}
+.bl-poster {
+    float: left;	
+}
+.bl-l {
+	width: 100%;
+    float: left;	
+}
+.bl-r {
+	width: calc(100% - 175px);
+    height: 110px;
+    float: right;	
+}
+.bl-r:after { clear: both; content: ""; display: block; height: 0; width: 0; visibility: hidden }
+</style>
 HTML;
 	
 	echofooter();
@@ -1456,7 +1491,7 @@ HTML;
 			$c_name = $collections_info[$c_id]['name'];
 			
 			@unlink( ROOT_DIR . "/uploads/posts/" . $folder_prefix . $image );	
-			if( $config['collections_log'] ) $db->query( "INSERT INTO " . USERPREFIX . "_admin_logs (name, date, ip, action, extras) values ('".$db->safesql($member_id['name'])."', '{$added_time}', '{$_IP}', '37', 'Удаляет файл обложки из колекции <a href=\"{$config['http_home_url']}admin.php?mod=news_collections&action=edit&id={$c_id}\">" . $db->safesql($c_name) . "</a>')" );
+			if( $config['collections_log'] ) $db->query( "INSERT INTO " . USERPREFIX . "_admin_logs (name, date, ip, action, extras) values ('".$db->safesql($member_id['name'])."', '{$added_time}', '{$_IP}', '37', 'Удаляет файл обложки из колекции <a href=\"{$config['http_home_url']}{$config['admin_path']}?mod=news_collections&action=edit&id={$c_id}\">" . $db->safesql($c_name) . "</a>')" );
 			die();
 		
 		} else die('err');
@@ -1532,7 +1567,7 @@ HTML;
 		}
 		
 	
-		if( $config['collections_log'] ) $db->query( "INSERT INTO " . USERPREFIX . "_admin_logs (name, date, ip, action, extras) values ('".$db->safesql($member_id['name'])."', '{$added_time}', '{$_IP}', '36', 'Загружает файл обложки для колекции <a href=\"{$config['http_home_url']}admin.php?mod=news_collections&action=edit&id={$row['id']}\">" . $db->safesql($row['name']) . "</a>')" );
+		if( $config['collections_log'] ) $db->query( "INSERT INTO " . USERPREFIX . "_admin_logs (name, date, ip, action, extras) values ('".$db->safesql($member_id['name'])."', '{$added_time}', '{$_IP}', '36', 'Загружает файл обложки для колекции <a href=\"{$config['http_home_url']}{$config['admin_path']}?mod=news_collections&action=edit&id={$row['id']}\">" . $db->safesql($row['name']) . "</a>')" );
 
 		$img_url = $data_url = $config['http_home_url'] . "uploads/posts/" . date( "Y-m" )."/" . $uploaded_filename;
 
