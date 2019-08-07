@@ -111,4 +111,5 @@ RewriteRule ^collections(/?)$ index.php?do=collections [L]
  - Z990082286464
  
 teramoune@gmail.com
+
 Telegram: @TeraMoune
