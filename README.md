@@ -3,6 +3,10 @@
 
 Тестировался на версиях движка 13.0 и 13.2, PHP 7, MySQL 5.7 (Null)
 
+Список изменений будет [Тут](https://github.com/TeraMoune/Collections-DLE/wiki)
+
+[F.A.Q.](https://github.com/TeraMoune/Collections-DLE/wiki/F.A.Q.)
+
 ---
  - Открытый код
  - CEO оптимизация
