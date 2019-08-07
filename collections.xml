@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <dleplugin>
 	<name>Collections</name>
-	<description>Подборки для DataLife Engine. teramoune@gmail.com</description>
+	<description>Подборки для DataLife Engine. teramoune@gmail.com, Git: https://github.com/TeraMoune/Collections-DLE</description>
 	<icon></icon>
 	<version></version>
 	<dleversion>13</dleversion>
@@ -14,7 +14,7 @@
   `user_name` varchar(100) NOT NULL DEFAULT '',
   `name` varchar(255) NOT NULL DEFAULT '',
   `alt_url` varchar(190) NOT NULL DEFAULT '',
-  `descr` varchar(255) NOT NULL DEFAULT '',
+  `descr` text NOT NULL,
   `num_elem` int(11) NOT NULL DEFAULT '0',
   `date` datetime NOT NULL DEFAULT '0000-00-00 00:00:00',
   `create_date` datetime NOT NULL DEFAULT '0000-00-00 00:00:00',
@@ -257,15 +257,16 @@ else $next = $url_page . '/page/' . $next_page . '/';]]></replacecode>
 		</operation>
 	</file>
 	<file name="engine/modules/show.full.php">
-		<operation action="after">
-			<searchcode><![CDATA[if ($config['category_separator'] != ',') $config['category_separator'] = ' '.$config['category_separator'];]]></searchcode>
+		<operation action="before">
+			<searchcode><![CDATA[$tpl->compile( 'content' );]]></searchcode>
 			<replacecode><![CDATA[if( !$row['collections'] ) {
   
   	if( $row['tags'] OR $row['xfields'] ) search_collections();
   	else {
       
-        $tpl->set( '{collections-link}', 'Подборки: Не заданы' );
-        $tpl->set( '{collections}', 'Подборки: Не заданы' );  
+        $tpl->set( '{collections-link}', $config['collection_speedbar'] . ': Не заданы' );
+        $tpl->set( '{collections}', $config['collection_speedbar'] . ': Не заданы' );
+      	$tpl->set( '{owner-cnews-list}', '' );
         $tpl->set_block( "'\\[not-collections\\](.*?)\\[/not-collections\\]'si", "" );
       
     }
@@ -294,7 +295,7 @@ else $next = $url_page . '/page/' . $next_page . '/';]]></replacecode>
 				$collections[] = $collections_info[$element]['name'];
               
 				if( $config['allow_alt_url'] ) {	
-					$collections_link = "<a href=\"" . $config['http_home_url'] . "collections/{$collections_info[$element]['id']}-{$collections_info[$element]['alt_url']}" . "\">{$collections_info[$element]['name']}</a>";
+					$collections_link[] = "<a href=\"" . $config['http_home_url'] . "collections/{$collections_info[$element]['id']}-{$collections_info[$element]['alt_url']}" . "\">{$collections_info[$element]['name']}</a>";
                 } else {	
       				$collections_link[] = "<a href=\"$PHP_SELF?do=collections&amp;id={$collections_info[$element]['id']}\">{$collections_info[$element]['name']}</a>";
                 }
@@ -306,13 +307,12 @@ else $next = $url_page . '/page/' . $next_page . '/';]]></replacecode>
 	}
   
   	search_collections(1);
-	$collections_link = implode( "{$config['collection_separator']}", $collections_link );		
-	$collections = implode( "{$config['collection_separator']}", $collections );
 
-    $tpl->set( '{collections-link}', 'Подборки: ' . $collections_link );
-   	$tpl->set( '{collections}', 'Подборки: ' . $collections );
+    $tpl->set( '{collections-link}', $config['collection_speedbar'] . ': ' . implode( "{$config['collection_separator']}", $collections_link ) );
+   	$tpl->set( '{collections}', $config['collection_speedbar'] . ': ' . implode( "{$config['collection_separator']}", $collections ) );
   	$tpl->set( '[not-collections]', "" );
 	$tpl->set( '[/not-collections]', "" );
+
 }
 
 $c_allow = $user_group[$member_id['user_group']]['collections_allow_edit'];
@@ -386,7 +386,7 @@ HTML;]]></replacecode>
 if (!is_array ( $collections_info )) {
 	$collections_info = array ();
 
-	$db->query ( "SELECT id, user_name, name, alt_url, descr, num_elem, date, create_date, cover, current_tags, current_xfields FROM " . PREFIX . "_news_collections ORDER BY id ASC" );
+	$db->query ( "SELECT id, user_name, name, alt_url, descr, num_elem, date, create_date, cover, news_ids, current_tags, current_xfields FROM " . PREFIX . "_news_collections ORDER BY id ASC" );
 	while ( $row = $db->get_row () ) {
 
 		$collections_info[$row['id']] = array ();
@@ -533,9 +533,11 @@ if( count($c_list) ) {
 		</operation>
 		<operation action="before">
 			<searchcode><![CDATA[clear_cache( array('news_', 'related_', 'tagscloud_', 'archives_', 'calendar_', 'topnews_', 'rss', 'stats') );]]></searchcode>
-			<replacecode><![CDATA[if( count($c_list) ) {
+			<replacecode><![CDATA[if( count($c_list) AND $c_list[0] != 0 ) {
   
   foreach( $c_list as $val ) {
+    
+    if( $val ) {
     
       $getCollection = $db->super_query("SELECT news_ids FROM ".PREFIX."_news_collections WHERE id = '{$val}'");	
 
@@ -547,9 +549,13 @@ if( count($c_list) ) {
         
       } else $c_list = $val;
 
+      @unlink( ENGINE_DIR . '/cache/system/collections.php' );
       @unlink( ENGINE_DIR . '/cache/system/collections_title/collections_title_'.$val.'.php' );
+      clear_cache( array('collections_news_', 'cblock_list_') );
       $db->query("UPDATE ".PREFIX."_news_collections SET date = '{$thistime}', num_elem = num_elem+1, news_ids = '{$c_list}' WHERE id = '{$val}'");
   
+    }
+    
   }
   
 }]]></replacecode>
@@ -594,19 +600,24 @@ if( !$c_allow AND $member_id['user_group'] != "1" ) {
 			<searchcode><![CDATA[include_once (DLEPlugins::Check(ENGINE_DIR . '/classes/parse.class.php'));]]></searchcode>
 			<replacecode><![CDATA[$collections_info = get_vars ( "collections" );
 
-if (!is_array ( $collections_info )) {
+if( !is_array ( $collections_info ) ) {
+  
 	$collections_info = array ();
 
 	$db->query ( "SELECT id, user_name, name, alt_url, descr, num_elem, date, create_date, cover FROM " . PREFIX . "_news_collections ORDER BY id ASC" );
-	while ( $row = $db->get_row () ) {
+	
+  	while( $row = $db->get_row () ) {
 
 		$collections_info[$row['id']] = array ();
 
 		foreach ( $row as $key => $value ) {
+          
 			$collections_info[$row['id']][$key] = stripslashes ( $value );
+          
 		}
 
 	}
+  
 	set_vars ( "collections", $collections_info );
 	$db->free ();
 }]]></replacecode>
@@ -615,8 +626,10 @@ if (!is_array ( $collections_info )) {
 			<searchcode><![CDATA[$cat_list = explode( ',', $row['category'] );]]></searchcode>
 			<replacecode><![CDATA[$c_list = explode( ',', $row['collections'] );
 foreach( $collections_info as $val ) {
+  
    	if( in_array($val['id'], $c_list ) ) $c_opt .= '<option value="'.$val['id'].'" selected>'.$val['name'].'</option>'; 
- 	else $c_opt .= '<option value="'.$val['id'].'">'.$val['name'].'</option>'; 
+ 	else $c_opt .= '<option value="'.$val['id'].'">'.$val['name'].'</option>';
+  
 }]]></replacecode>
 		</operation>
 		<operation action="after">
@@ -637,18 +650,21 @@ foreach( $collections_info as $val ) {
 			<searchcode><![CDATA[if( !is_array($category) ) $category = array ();]]></searchcode>
 			<replacecode><![CDATA[$collections = $_POST['collections_list'];
 if( !is_array($collections) ) $collections = array ();
-	
 if( !count($collections) ) $collections[] = '0';
 
 $c_list = array();
 
-foreach ( $collections as $value ) {
+foreach( $collections as $value ) {
+  
 	$c_list[] = intval($value);
+  
 }
 
 $c_allow = explode( ',', $user_group[$member_id['user_group']]['collections_allow_edit'] );
 if( count($c_list) ) {
+  
 	if( !$c_allow AND $member_id['user_group'] != "1" ) msg( "error", $lang['addnews_error'], "Вы не можете указывать новостям подборки.", "javascript:history.go(-1)" );
+
 }
 
 $c_list = $db->safesql( implode( ',', $c_list ) );]]></replacecode>
@@ -674,19 +690,25 @@ $c_list = $db->safesql( implode( ',', $c_list ) );]]></replacecode>
   $addC_tmp = array_diff ($c_list, $tmp_c);
   $removeC_tmp = array_diff ($tmp_c, $c_list);  
   $thistime = date( "Y-m-d H:i:s", time() );
+  
   if( count($addC_tmp) ) {
 
     foreach( $addC_tmp as $val ) {
+      
         $getCollection = $db->super_query("SELECT news_ids FROM ".PREFIX."_news_collections WHERE id = '{$val}'");	
 
         if( $getCollection['news_ids'] ) {
+          
             $tmp_c = explode(',', $getCollection['news_ids']);
             $tmp_c[] = $item_db[0];
             $c_list = implode(',', $tmp_c);
         } else $c_list = $val;
 
+        @unlink( ENGINE_DIR . '/cache/system/collections.php' );
         @unlink( ENGINE_DIR . '/cache/system/collections_title/collections_title_'.$val.'.php' );
+        clear_cache( array('collections_news_', 'cblock_list_') );
         $db->query("UPDATE ".PREFIX."_news_collections SET date = '{$thistime}', num_elem = num_elem+1, news_ids = '{$c_list}' WHERE id = '{$val}'");
+    
     }
 
   }
@@ -760,20 +782,58 @@ $c_list = $db->safesql( implode( ',', $c_list ) );]]></replacecode>
 		<operation action="before">
 			<searchcode><![CDATA[$tpl->copy_template = str_replace ( "{topnews}", $tpl->result['topnews'], $tpl->copy_template );]]></searchcode>
 			<replacecode><![CDATA[if( $collections_id ) {
-  $tpl->set( '{c-title}', $collections['name'] );
-  if( $collections['descr'] ) {
-    $collections['descr'] = stripslashes($collections['descr']);
-    $tpl->set( '{c-descr}', $collections['descr'] );
-  } else $tpl->set( '{c-descr}', '' );
-  $tpl->set( '[collections-show]', '' );
-  $tpl->set( '[/collections-show]', '' );
+
+  	$collections['name'] = stripslashes( $collections['name'] );
+	$tpl->set( '{c-title}', str_replace("&amp;amp;", "&amp;",  htmlspecialchars( $collections['name'], ENT_QUOTES, $config['charset'] ) ) );
+    
+  	if( $collections['descr'] ) {
+      
+      	$collections['descr'] = stripslashes($collections['descr']);
+      	$tpl->set( '{c-descr}', $collections['descr'] );
+      
+		if ( preg_match( "#\\{c-descr limit=['\"](.+?)['\"]\\}#i", $tpl->copy_template, $matches ) ) {
+				
+			$count= intval($matches[1]);
+			$collections['descr'] = preg_replace ( "#\[hide(.*?)\](.+?)\[/hide\]#is", "", $collections['descr'] );
+			$collections['descr'] = preg_replace( "#<!--dle_spoiler(.+?)<!--spoiler_text-->#is", "", $collections['descr'] );
+			$collections['descr'] = preg_replace( "#<!--spoiler_text_end-->(.+?)<!--/dle_spoiler-->#is", "", $collections['descr'] );
+			$collections['descr'] = str_replace( "><", "> <", $collections['descr'] );
+			$collections['descr'] = strip_tags( $collections['descr'], "<br>" );
+			$collections['descr'] = trim(str_replace( "<br>", " ", str_replace( "<br />", " ", str_replace( "\n", " ", str_replace( "\r", "", $collections['descr'] ) ) ) ));
+			$collections['descr'] = preg_replace('/\s+/u', ' ', $collections['descr']);
+
+			if( $count AND dle_strlen( $row['descr'], $config['charset'] ) > $count ) {
+										
+				$row['descr'] = dle_substr( $row['descr'], 0, $count, $config['charset'] );
+											
+				if( ($temp_dmax = dle_strrpos( $row['descr'], ' ', $config['charset'] )) ) $row['descr'] = dle_substr( $row['descr'], 0, $temp_dmax, $config['charset'] );
+									
+			}
+					
+			$tpl->set( $matches[0], $row['descr'] );
+				
+		}       
+      
+    } else $tpl->set( '{c-descr}', '' );
+  
+    $tpl->set( '[collections-show]', '' );
+    $tpl->set( '[/collections-show]', '' );
+  
 } else {
-  $tpl->set_block( "'\\[collections-show\\](.*?)\\[/collections-show\\]'si", "" );
-  $tpl->set( '{c-title}', '' );
-  $tpl->set( '{c-descr}', '' );
+  
+    $tpl->set_block( "'\\[collections-show\\](.*?)\\[/collections-show\\]'si", "" );
+    $tpl->set( '{c-title}', '' );
+    $tpl->set( '{c-descr}', '' );
+  
+}]]></replacecode>
+		</operation>
+		<operation action="after">
+			<searchcode><![CDATA[$tpl->compile ( 'main' );]]></searchcode>
+			<replacecode><![CDATA[if (stripos ( $tpl->result['main'], "{collections ids-news" ) !== false) {
+	$tpl->result['main'] = preg_replace_callback ( "#\\{collections ids-news(.+?)\\}#i", "show_news_collections", $tpl->result['main'] );
 }
-if (stripos ( $tpl->copy_template, "{collections" ) !== false) {
-	$tpl->copy_template = preg_replace_callback ( "#\\{collections(.+?)?\\}#i", "show_collections", $tpl->copy_template );
+if (stripos ( $tpl->result['main'], "{collections" ) !== false) {
+	$tpl->result['main'] = preg_replace_callback ( "#\\{collections(.+?)?\\}#i", "show_collections", $tpl->result['main'] );
 }]]></replacecode>
 		</operation>
 	</file>
@@ -810,15 +870,20 @@ if (stripos ( $tpl->copy_template, "{collections" ) !== false) {
   
   	if( count($collections_list) ) {	
   
-	$config['collection_separator'] = $config['collection_separator'] ? $config['collection_separator'] : ',';	
+	$config['collection_separator'] = $config['collection_separator'] ? $config['collection_separator'] : ',';
+      
 	if( count( $collections_list ) == 1 ) {
 				
 		$collections[] = $collections_info[$collections_list[0]]['name'];
       
-		if( $config['allow_alt_url'] ) {		
+		if( $config['allow_alt_url'] ) {
+          
 			$collections_link[] = "<a href=\"" . $config['http_home_url'] . "collections/{$collections_info[$collections_list[0]]['id']}-{$collections_info[$collections_list[0]]['alt_url']}" . "\">{$collections_info[$collections_list[0]]['name']}</a>";
-        } else {		
+        
+        } else {
+          
       		$collections_link[] = "<a href=\"$PHP_SELF?do=collections&amp;id={$collections_info[$collections_list[0]]['id']}\">{$collections_info[$collections_list[0]]['name']}</a>";
+        
         }
       
 	} else {
@@ -857,7 +922,8 @@ if (stripos ( $tpl->copy_template, "{collections" ) !== false) {
       if( !$t ) {
         
         $tpl->set( '{collections-link}', 'Подборки: Не заданы' );
-        $tpl->set( '{collections}', 'Подборки: Не заданы' );  
+        $tpl->set( '{collections}', 'Подборки: Не заданы' );
+        $tpl->set( '{owner-cnews-list}', '' );
         $tpl->set_block( "'\\[not-collections\\](.*?)\\[/not-collections\\]'si", "" );
         
       }
@@ -866,8 +932,8 @@ if (stripos ( $tpl->copy_template, "{collections" ) !== false) {
 }
 
 function show_collections( $matches=array() ) {
-	global $db, $config, $_TIME;
-	
+	global $db, $config, $_TIME, $collections_list;
+		
 	$param_str = trim($matches[1]);
 	$custom_cache_id = "show_collections".$param_str.$config['skin'];
 	$thisdate = date( "Y-m-d H:i:s", $_TIME );
@@ -875,42 +941,55 @@ function show_collections( $matches=array() ) {
 	$where = array();
 	$allow_cache = $config['allow_cache'];
 
-	if( preg_match( "#id=['\"](.+?)['\"]#i", $param_str, $match ) ) {
+	if( preg_match( "#owner_news=['\"]true['\"]#i", $param_str, $match ) AND count($collections_list) > 0 ) {
 
-		$temp_array = array();
-		$where_id = array();
-		$match[1] = intval($match[1]);
+		$temp_array = implode(',', $collections_list);
 
-		if ( $match[1] ) {
-
-			$where[] = "id ='" . $match[1] . "'";
-
-		}
-
-	} else $where[] = "1"; 
+		$custom_category = $db->safesql( trim($temp_array) );
+		$custom_category = str_replace( ",", "','", $custom_category );
 	
-	if( preg_match( "#days=['\"](.+?)['\"]#i", $param_str, $match ) ) {
-		$days = intval(trim($match[1]));
+		$where[] = "id IN ('" . $custom_category . "')";
+
+	} else {
 		
-		if($fromfuture) {
-			
+		if( preg_match( "#id=['\"](.+?)['\"]#i", $param_str, $match ) ) {
+
+			$temp_array = array();
+			$where_id = array();
+			$match[1] = intval($match[1]);
+
+			if ( $match[1] ) {
+
+				$where[] = "id ='" . $match[1] . "'";
+
+			}
+
+		} else $where[] = "1";		
+		
+	}
+  
+	if( preg_match( "#days=['\"](.+?)['\"]#i", $param_str, $match ) ) {
+		
+		$days = intval(trim($match[1]));
+				
+		if( $fromfuture ) {
+					
 			$startdate = date("Y-m-d 00:00:00", strtotime("+1 day"));
 			$enddate = date("Y-m-d 00:00:00", strtotime("+".($days+1)." day"));
 			$where[] = "date >= '{$startdate}' AND date < '{$enddate}'";
+					
+		} else $where[] = "date >= '{$thisdate}' - INTERVAL {$days} DAY AND date < '{$thisdate}'";
 			
-		} else {
-			
-			$where[] = "date >= '{$thisdate}' - INTERVAL {$days} DAY AND date < '{$thisdate}'";
-			
-		}
-		
 	} else $days = 0;
-	
+		
 	if( preg_match( "#template=['\"](.+?)['\"]#i", $param_str, $match ) ) {
+		
 		$custom_template = trim($match[1]);
+		
 	} else $custom_template = "collections_block";
 
 	if( preg_match( "#sort=['\"](.+?)['\"]#i", $param_str, $match ) ) {
+		
 		$allowed_sort = array ('asc' => 'ASC', 'desc' => 'DESC' );
 
 		$match[1] = strtolower($match[1]);
@@ -920,103 +999,148 @@ function show_collections( $matches=array() ) {
 	} else $news_msort = 'ASC';
 
 	if( preg_match( "#limit=['\"](.+?)['\"]#i", $param_str, $match ) ) {
+	
 		$limit = intval($match[1]);
+	
 	} else $limit = 1;  
-  
+	  
 	if( preg_match( "#order=['\"](.+?)['\"]#i", $param_str, $match ) ) {
+	
 		$allowed_sort = array ('date' => 'date', 'create_date' => 'create_date', 'num_elem' => 'num_elem', 'name' => 'name', 'rand' => 'RAND()' );
 
 		$match[1] = strtolower($match[1]);
 
 		if ( $allowed_sort[$match[1]] ) $news_sort = $allowed_sort[$match[1]];
 
-		if ($match[1] == "rand" ) { $news_msort = ""; }
+		if ( $match[1] == "rand" ) { $news_msort = ""; }
 
 	} else $news_sort = "date";
 
 	$content = dle_cache( "collection_block", $custom_cache_id, true );
-	
-	if( $content !== false ) {
 		
-		$config['allow_cache'] = $allow_cache;
+	if( $content !== false ) {
 			
+		$config['allow_cache'] = $allow_cache;
+					
 		return $content;
-	
+		
 	} else {
 
 		$tpl = new dle_template();
 		$tpl->dir = TEMPLATE_DIR;				
 
 		$tpl->load_template( $custom_template . '.tpl' );
-	
 		$sql_select .= " WHERE ".implode(' AND ', $where)." ORDER BY " . $news_sort . " " . $news_msort . " LIMIT " . $limit;
-		
+				
 		$sql_result = $db->query( $sql_select );
 
-      	while ( $row = $db->get_row( $sql_result ) ) {
-          
-          $found = true;
-          
-          $row['date'] = strtotime( $row['date'] );
-          
- 		  $row['name'] = stripslashes( $row['name'] );
+		while ( $row = $db->get_row( $sql_result ) ) {
+				  
+			$found = true;
+					  
+			$row['date'] = strtotime( $row['date'] );
+			$row['name'] = stripslashes( $row['name'] );
+			$row['descr'] = stripslashes($row['descr']);
+			$tpl->set( '{descr}', $row['descr'] );
 
-		  $tpl->set( '{title}', str_replace("&amp;amp;", "&amp;",  htmlspecialchars( $row['name'], ENT_QUOTES, $config['charset'] ) ) );
+			if ( preg_match( "#\\{descr limit=['\"](.+?)['\"]\\}#i", $tpl->copy_template, $matches ) ) {
+				
+				$count= intval($matches[1]);
+				$row['descr'] = preg_replace ( "#\[hide(.*?)\](.+?)\[/hide\]#is", "", $row['descr'] );
+				$row['descr'] = preg_replace( "#<!--dle_spoiler(.+?)<!--spoiler_text-->#is", "", $row['descr'] );
+				$row['descr'] = preg_replace( "#<!--spoiler_text_end-->(.+?)<!--/dle_spoiler-->#is", "", $row['descr'] );
+				$row['descr'] = str_replace( "><", "> <", $row['descr'] );
+				$row['descr'] = strip_tags( $row['descr'], "<br>" );
+				$row['descr'] = trim(str_replace( "<br>", " ", str_replace( "<br />", " ", str_replace( "\n", " ", str_replace( "\r", "", $row['descr'] ) ) ) ));
+				$row['descr'] = preg_replace('/\s+/u', ' ', $row['descr']);
 
-		  if ( preg_match( "#\\{title limit=['\"](.+?)['\"]\\}#i", $tpl->copy_template, $matches ) ) {
-			$count= intval($matches[1]);
-			$row['name'] = strip_tags( $row['name'] );
-
-			if( $count AND dle_strlen( $row['name'], $config['charset'] ) > $count ) {
-						
-				$row['name'] = dle_substr( $row['name'], 0, $count, $config['charset'] );
-						
-				if( ($temp_dmax = dle_strrpos( $row['name'], ' ', $config['charset'] )) ) $row['name'] = dle_substr( $row['name'], 0, $temp_dmax, $config['charset'] );
+				if( $count AND dle_strlen( $row['descr'], $config['charset'] ) > $count ) {
+										
+					$row['descr'] = dle_substr( $row['descr'], 0, $count, $config['charset'] );
+											
+					if( ($temp_dmax = dle_strrpos( $row['descr'], ' ', $config['charset'] )) ) $row['descr'] = dle_substr( $row['descr'], 0, $temp_dmax, $config['charset'] );
+									
+				}
 					
+				$tpl->set( $matches[0], $row['descr'] );
+				
+			}          
+					  
+			$tpl->set( '{title}', str_replace("&amp;amp;", "&amp;",  htmlspecialchars( $row['name'], ENT_QUOTES, $config['charset'] ) ) );
+
+			if ( preg_match( "#\\{title limit=['\"](.+?)['\"]\\}#i", $tpl->copy_template, $matches ) ) {
+				
+				$count= intval($matches[1]);
+				$row['name'] = strip_tags( $row['name'] );
+
+				if( $count AND dle_strlen( $row['name'], $config['charset'] ) > $count ) {
+							
+					$row['name'] = dle_substr( $row['name'], 0, $count, $config['charset'] );
+											
+					if( ($temp_dmax = dle_strrpos( $row['name'], ' ', $config['charset'] )) ) $row['name'] = dle_substr( $row['name'], 0, $temp_dmax, $config['charset'] );
+									
+				}
+
+				$tpl->set( $matches[0], str_replace("&amp;amp;", "&amp;",  htmlspecialchars( $row['name'], ENT_QUOTES, $config['charset'] ) ) );
+
 			}
+					  
+			if( date( 'Ymd', $row['date'] ) == date( 'Ymd', $_TIME ) ) {
 
-			$tpl->set( $matches[0], str_replace("&amp;amp;", "&amp;",  htmlspecialchars( $row['name'], ENT_QUOTES, $config['charset'] ) ) );
+				$tpl->set( '{date}', $lang['time_heute'] . langdate( ", H:i", $row['date'] ) );
 
-		  }
-          
-          if( date( 'Ymd', $row['date'] ) == date( 'Ymd', $_TIME ) ) {
+			} elseif( date( 'Ymd', $row['date'] ) == date( 'Ymd', ($_TIME - 86400) ) ) {
 
-              $tpl->set( '{date}', $lang['time_heute'] . langdate( ", H:i", $row['date'] ) );
+				$tpl->set( '{date}', $lang['time_gestern'] . langdate( ", H:i", $row['date'] ) );
 
-          } elseif( date( 'Ymd', $row['date'] ) == date( 'Ymd', ($_TIME - 86400) ) ) {
+			} else {
 
-              $tpl->set( '{date}', $lang['time_gestern'] . langdate( ", H:i", $row['date'] ) );
+				$tpl->set( '{date}', langdate( $config['timestamp_active'], $row['date'] ) );
 
-          } else {
+			}
+					  
+			if( $row['cover'] AND file_exists( ROOT_DIR . '/uploads/posts/' . $row['cover'] ) ) {
 
-              $tpl->set( '{date}', langdate( $config['timestamp_active'], $row['date'] ) );
+				$tpl->set( '{cover}', $config['http_home_url'] . 'uploads/posts/' . $row['cover'] );
 
-          }
-          
-		if( $row['cover'] AND file_exists( ROOT_DIR . '/uploads/posts/' . $row['cover'] ) ) {
+			} else $tpl->set( '{cover}', '{THEME}/dleimages/no_image.jpg'  );
+				
+			if( $config['allow_alt_url'] ) $url = $config['http_home_url'] . 'collections/' . $row['id'] . '-' . $row['alt_url'];
+			else $url = $config['http_home_url'] . '?do=collections&id=' . $row['id'];
 
-			$tpl->set( '{cover}', $config['http_home_url'] . 'uploads/posts/' . $row['cover'] );
-		
-		} else $tpl->set( '{cover}', '{THEME}/dleimages/no_image.jpg'  );
-	
-		if( $config['allow_alt_url'] ) $url = $config['http_home_url'] . 'collections/' . $row['id'] . '-' . $row['alt_url'];
-		else $url = $config['http_home_url'] . '?do=collections&id=' . $row['id'];
+			$tpl->set( '{num_elem}', intval($row['num_elem']) );
+			$tpl->set( '{url}', $url );
 
-		$tpl->set( '{num_elem}', intval($row['num_elem']) );
-		$tpl->set( '{url}', $url );
-
-		$tpl->compile( 'collections' );	
-          
-        }  
-      
+			$tpl->compile( 'collections' );	
+					  
+		} 
+				  
 		if ( $found ) create_cache( "collection_block", $tpl->result['collections'], $custom_cache_id, true );
-		
+					
 		$config['allow_cache'] = $allow_cache;
-		
+					
 		return $tpl->result['collections'];
-	
+		
 	}
 
+}
+
+function show_news_collections( $matches=array() ) {
+	global $collections_info;
+		
+	$param_str = trim($matches[1]);
+
+	if( preg_match( "#id=['\"](.+?)['\"]#i", $param_str, $match ) ) {
+		
+		$id = intval(trim($match[1]));
+
+        if( $collections_info[$id]['news_ids'] ) {
+			$ids = $collections_info[$id]['news_ids'];
+        } else $ids = 0;
+      
+	} else $ids = 0;
+
+  	return $ids;
 }]]></replacecode>
 		</operation>
 	</file>
