@@ -1,4 +1,4 @@
-# Collections-DLE
+# Collections-DLE (Обновлено от  [07.08.2019](https://github.com/TeraMoune/Collections-DLE/wiki#07082019))
 Модуль позволит создавать подборки новостей.
 
 Тестировался на версиях движка 13.0 и 13.2, PHP 7, MySQL 5.7 (Null)
