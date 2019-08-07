@@ -1,0 +1,71 @@
+.collections {
+  position: relative;
+  width: 230px;
+  height:340px;
+  display: inline-block;
+  margin: 10px;
+  padding: 0px;
+  overflow: hidden;
+  background:#FFF;
+}
+.collections.t2 { height:125px; }
+.collections img { width:100%; }
+.collections ul { list-style:none;margin:0;padding:0; }
+.collections ul li{ float:left;margin-right:5px; }
+.collections ul li:last-child{ margin-right:15px; }
+
+.collections .header {
+  position: absolute;
+  background: #fffffffa;
+  width: calc(100% - 12px);
+  padding: 2px 6px;
+  border-bottom: 1px solid #dcdcdc;
+}
+
+.collections .post-info{ display:none; }
+
+.collections .title {
+  margin-bottom: .5em;
+  font-size: 17px;
+  line-height: 17px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  vertical-align: middle;
+}
+
+.collections:hover .post-info { display:block; }
+.collections:hover .title { white-space: normal; }
+
+.collections_fav {
+  position: absolute;
+  top: 0;
+}
+
+.collections__title {
+  position: absolute;
+  bottom: 0;
+  width: 100%;
+  background: #000000b8;
+  font-size: 18px;
+  margin: 0;
+  padding: 0 6px;
+  color: #FFF;
+  font-weight: 100;	
+}
+
+.collections__count {
+  background: #000000b8;
+  padding: 2px 6px;
+  position: absolute;
+  top: 0;
+  right: 0;
+  color: #FFF;
+  font-weight: 500;	
+}
+
+.collections .com-num {
+  background: #00000087;
+  padding: 2px 6px;
+  color: #FFF;
+}
