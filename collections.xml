@@ -31,7 +31,7 @@
 ) ENGINE=InnoDB DEFAULT CHARACTER SET {charset} COLLATE {charset}_general_ci;
 
 ALTER TABLE `{prefix}_post` ADD `collections` varchar(190) NOT NULL DEFAULT '0' AFTER `category`;
-ALTER TABLE `{prefix}_users` ADD `favorites_collections` text NOT NULL;
+ALTER TABLE `{userprefix}_users` ADD `favorites_collections` text NOT NULL;
 ALTER TABLE `{prefix}_usergroups` ADD `collections_allow_edit` tinyint(1) NOT NULL DEFAULT '0';
 INSERT INTO `{prefix}_admin_sections` (`name`, `title`, `descr`, `icon`, `allow_groups`) VALUES ('news_collections', 'Подборки новостей', '', '', '1');]]></mysqlinstall>
 	<mysqlupgrade><![CDATA[]]></mysqlupgrade>
@@ -39,7 +39,7 @@ INSERT INTO `{prefix}_admin_sections` (`name`, `title`, `descr`, `icon`, `allow_
 	<mysqldisable><![CDATA[]]></mysqldisable>
 	<mysqldelete><![CDATA[DROP TABLE IF EXISTS {prefix}_news_collections;
 ALTER TABLE `{prefix}_post` DROP `collections`;
-ALTER TABLE `{prefix}_users` DROP `favorites_collections`;
+ALTER TABLE `{userprefix}_users` DROP `favorites_collections`;
 ALTER TABLE `{prefix}_usergroups` DROP `collections_allow_edit`;
 DELETE FROM `{prefix}_admin_sections` WHERE name = 'news_collections';]]></mysqldelete>
 	<phpinstall><![CDATA[$db->query("UPDATE ".PREFIX."_usergroups SET collections_allow_edit = 1 WHERE id = 1");]]></phpinstall>
@@ -818,10 +818,17 @@ $c_list = $db->safesql( implode( ',', $c_list ) );]]></replacecode>
   
     $tpl->set( '[collections-show]', '' );
     $tpl->set( '[/collections-show]', '' );
+    $tpl->set_block( "'\\[collections-alllist\\](.*?)\\[/collections-alllist\\]'si", "" );
   
 } else {
   
     $tpl->set_block( "'\\[collections-show\\](.*?)\\[/collections-show\\]'si", "" );
+  	if( $do == 'collections' ) {
+      
+      $tpl->set( '[collections-alllist]', '' );
+      $tpl->set( '[/collections-alllist]', '' );
+      
+    } else $tpl->set_block( "'\\[collections-alllist\\](.*?)\\[/collections-alllist\\]'si", "" );
     $tpl->set( '{c-title}', '' );
     $tpl->set( '{c-descr}', '' );
   
@@ -841,7 +848,7 @@ if (stripos ( $tpl->result['main'], "{collections" ) !== false) {
 		<operation action="before">
 			<searchcode><![CDATA[function custom_print( $matches=array() ) {]]></searchcode>
 			<replacecode><![CDATA[function search_collections( $t = false ) {
-	global $collections_info, $collections_link, $collections, $tpl, $config, $row;
+	global $collections_info, $collections_link, $collections_list, $collections, $tpl, $config, $row;
   
   	if( !$t ) {
       
@@ -856,9 +863,11 @@ if (stripos ( $tpl->result['main'], "{collections" ) !== false) {
 		if( $val['current_tags'] ) {
 			
 			$s_t = explode(', ', $val['current_tags']);
-			if( preg_match("/" . implode('|', $s_t) . "/i", $tags) ) $collections_list[] = $val['id'];
+			if( preg_match("/" . implode('|', $s_t) . "/i", implode(', ', $row['tags'])) ) $collections_list[] = $val['id'];
 
-		} else if( $val['current_xfields'] ) {
+		}
+      
+      	if( $val['current_xfields'] ) {
 			
 			$s_t = explode('||', $val['current_xfields']);
 			
