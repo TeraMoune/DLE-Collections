@@ -131,9 +131,9 @@ if( $collections_id ) {
 	if( $is_fav ) {
 		
 		$fav_t = explode(',', $member_id['favorites_collections']);
-		$fav = "id regexp '[[:<:]](" . implode('|', $fav_t) . ")[[:>:]]'{$empty_show}";
+		$fav = "id regexp '[[:<:]](" . implode('|', $fav_t) . ")[[:>:]]'";
 		
-	} else $fav = "1{$empty_show}";
+	} else $fav = "1";
 
 	$config['collection_number'] = $config['collection_number'] ? $config['collection_number'] : 10;
 	$news_sort_by = ($config['collections_sort']) ? $config['collections_sort'] : $config['news_sort'];
@@ -307,8 +307,6 @@ if( $collections_id ) {
 			$row['num_elem'] = $sql_countt['count'];
 			
 		}
-		
-		if( !$config['collections_empty_show'] AND !$row['num_elem'] ) continue;
 		
 		$tpl->set( '{num_elem}', $row['num_elem'] );
 		$tpl->set( '{url}', $url );
