@@ -829,8 +829,8 @@ $c_list = $db->safesql( implode( ',', $c_list ) );]]></replacecode>
       $tpl->set( '[/collections-alllist]', '' );
       
     } else $tpl->set_block( "'\\[collections-alllist\\](.*?)\\[/collections-alllist\\]'si", "" );
-    $tpl->set( '{c-title}', '' );
-    $tpl->set( '{c-descr}', '' );
+    $tpl->set( '{c-title}', $config['collection_title'] );
+    $tpl->set( '{c-descr}', $config['collection_description'] );
   
 }]]></replacecode>
 		</operation>
