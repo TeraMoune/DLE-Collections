@@ -19,8 +19,8 @@ if( isset( $_GET['action'] ) and $_GET['action'] == "favorites" ) {
 if ( $cstart ) {
 	
 	$cstart = $cstart - 1;
-	$cstart = $cstart * $config['collection_number'];
-	
+	$cstart = $collections_id ? $cstart * $config['collection_news_number'] : $cstart * $config['collection_number'];
+
 }	
 
 if( $collections_id ) {
@@ -51,7 +51,6 @@ if( $collections_id ) {
 	if( $config['max_cache_pages'] < 3 ) $config['max_cache_pages'] = 3;
 
 	if ( $config['allow_cache'] AND $cache_id <= $config['max_cache_pages'] ) {
-		
 		$active = dle_cache( "collections_news_" . $collections_id, $cache_id, true );
 		$short_news_cache = true;
 		
@@ -61,7 +60,7 @@ if( $collections_id ) {
 		$short_news_cache = false;
 		
 	}	
-	
+
 	if ( $active ) {
 
 		$tpl->result['content'] .= $active;
@@ -72,38 +71,46 @@ if( $collections_id ) {
 		
 		$news_sort_by = ($config['collections_news_sort']) ? $config['collections_news_sort'] : $config['news_sort'];
 		$news_direction_by = ($config['collections_news_msort']) ? $config['collections_news_msort'] : $config['news_msort'];		
-
-		if( $collections['current_tags'] ) {
+		$where = array();
+		$current_select_tags = " ";
+		if( $collections['current_tags'] OR $collections['current_xfields'] ) {
 			
-			$collections['current_tags'] = explode(', ',$collections['current_tags']);
-			$current_select_tags = " INNER JOIN " . PREFIX . "_tags t on (t.news_id=p.id) ";	
-			$where = "t.tag regexp '[[:<:]](" . @$db->safesql( implode('|', $collections['current_tags']) ) . ")[[:>:]]'";
-			$sql_count = "SELECT COUNT(*) as count FROM " . PREFIX . "_post p{$current_select_tags}WHERE {$where} AND approve=1";
+			if( $collections['current_tags'] ) {
+				
+				$collections['current_tags'] = explode(', ', $collections['current_tags']);
+				$current_select_tags = " INNER JOIN " . PREFIX . "_tags t on (t.news_id=p.id) ";	
+				$where[] = "t.tag regexp '[[:<:]](" . @$db->safesql( implode('|', $collections['current_tags']) ) . ")[[:>:]]'";
 			
-		} else if( $collections['current_xfields'] ) {
-			
-			$collections['current_xfields'] = explode('||',$collections['current_xfields']);
-			
-			$like_arr = array();
-			foreach( $collections['current_xfields'] as $val ) {
-				$val = @$db->safesql( $val );
-				$like_arr[] = "xfields like '%{$val}%'";
 			}
 			
-			$current_select_tags = " ";	
-			$where = implode(' AND ', $like_arr);
-			$sql_count = "SELECT COUNT(*) as count FROM " . PREFIX . "_post WHERE {$where} AND approve=1";
+			if( $collections['current_xfields'] ) {
+				
+				$collections['current_xfields'] = explode('||', $collections['current_xfields']);
+				$like_arr = array();
+				
+				foreach( $collections['current_xfields'] as $val ) {
+					
+					$val = @$db->safesql( $val );
+					$like_arr[] = "p.xfields like '%{$val}%'";
+				
+				}
+				
+				$where[] = implode(' AND ', $like_arr);
+				
+			}			
 			
 		} else {
 			
-			$collections['news_ids'] = explode(',',$collections['news_ids']);
-			$current_select_tags = " ";
-			$where = "id regexp '[[:<:]](" . @$db->safesql( implode('|', $collections['news_ids']) ) . ")[[:>:]]'";
-			$sql_count = "SELECT COUNT(*) as count FROM " . PREFIX . "_post{$current_select_tags}WHERE {$where} AND approve=1";
+			$collections['news_ids'] = explode(',', $collections['news_ids']);
+			$where[] = "p.id regexp '[[:<:]](" . @$db->safesql( implode('|', $collections['news_ids']) ) . ")[[:>:]]'";
 			
 		}	
+
+		if( count($where) ) $where = implode(' AND ', $where);
 		
-		$sql_select = "SELECT p.id, p.autor, p.date, p.short_story, CHAR_LENGTH(p.full_story) as full_story, p.full_story as full_story_text, p.xfields, p.title, p.category, p.alt_name, p.comm_num, p.allow_comm, p.fixed, p.tags, e.news_read, e.allow_rate, e.rating, e.vote_num, e.votes, e.view_edit, e.editdate, e.editor, e.reason FROM " . PREFIX . "_post p{$current_select_tags}LEFT JOIN " . PREFIX . "_post_extras e ON (p.id=e.news_id) WHERE {$where} AND p.approve=1 ORDER BY " . $news_sort_by . " " . $news_direction_by . " LIMIT " . $cstart . "," . $config['collection_news_number'];		
+		$sql_select = "SELECT p.id, p.autor, p.date, p.short_story, CHAR_LENGTH(p.full_story) as full_story, p.full_story as full_story_text, p.xfields, p.title, p.category, p.alt_name, p.comm_num, p.allow_comm, p.fixed, p.tags, e.news_read, e.allow_rate, e.rating, e.vote_num, e.votes, e.view_edit, e.editdate, e.editor, e.reason FROM " . PREFIX . "_post p{$current_select_tags}LEFT JOIN " . PREFIX . "_post_extras e ON (p.id=e.news_id) WHERE {$where} AND p.approve=1 ORDER BY " . $news_sort_by . " " . $news_direction_by . " LIMIT " . $cstart . "," . $config['collection_news_number'];
+		$sql_count = "SELECT COUNT(*) as count FROM " . PREFIX . "_post p{$current_select_tags}WHERE {$where} AND approve=1";
+		
 		
 		$allow_active_news = true;
 		$view_template = "collections";
@@ -114,26 +121,28 @@ if( $collections_id ) {
 			$tpl->result['content'] = show_attach ( $tpl->result['content'], $attachments );
 		}
 				
-		if ($news_found AND $cache_id <= $config['max_cache_pages'] ) create_cache ( "collections_news_" . $collections_id, $tpl->result['content'], $cache_id, true );
-
+		if ($news_found AND $cache_id <= $config['max_cache_pages'] ) {
+			create_cache ( "collections_news_" . $collections_id, $tpl->result['content'], $cache_id, true );
+		}
 	}
 	
 } else {
-	
+
 	if( $is_fav ) {
 		
 		$fav_t = explode(',', $member_id['favorites_collections']);
-		$fav = "id regexp '[[:<:]](" . implode('|', $fav_t) . ")[[:>:]]'";
+		$fav = "id regexp '[[:<:]](" . implode('|', $fav_t) . ")[[:>:]]'{$empty_show}";
 		
-	} else $fav = "1";
+	} else $fav = "1{$empty_show}";
 
-	
 	$config['collection_number'] = $config['collection_number'] ? $config['collection_number'] : 10;
+	$news_sort_by = ($config['collections_sort']) ? $config['collections_sort'] : $config['news_sort'];
+	$news_direction_by = ($config['collections_msort']) ? $config['collections_msort'] : $config['news_msort'];	
 	
 	$count_all = $db->super_query( "SELECT COUNT(*) as count FROM " . PREFIX . "_news_collections WHERE {$fav}" );
 	$count_all = $count_all['count'];	
 	$news_count = $cstart;
-	$query = $db->super_query( "SELECT * FROM " . PREFIX . "_news_collections WHERE {$fav} ORDER BY date DESC LIMIT " . $cstart . "," . $config['collection_number'], true);
+	$query = $db->super_query( "SELECT * FROM " . PREFIX . "_news_collections WHERE {$fav} ORDER BY " . $news_sort_by . " " . $news_direction_by . " LIMIT " . $cstart . "," . $config['collection_number'], true);
 	
 	$collections_found = false;
 
@@ -264,15 +273,18 @@ if( $collections_id ) {
 		
 		} else $tpl->set_block( "'\\[not-descr\\](.*?)\\[/not-descr\\]'si", "" );
 		
+		$where_count = array();
+		
 		if( $row['current_tags'] ) {
 			
 			$row['current_tags'] = explode(', ', $row['current_tags']);
 				
-			$sql_countt = $db->super_query("SELECT COUNT(*) as count FROM " . PREFIX . "_post WHERE tags regexp '[[:<:]](" . implode('|', $row['current_tags']) . ")[[:>:]]'");
-				
-			$row['num_elem'] = $sql_countt['count'];
+			$where_count[] = "tags regexp '[[:<:]](" . implode('|', $row['current_tags']) . ")[[:>:]]'";
+
 			
-		} else if( $row['current_xfields'] ) {
+		} 
+		
+		if( $row['current_xfields'] ) {
 			
 			$row['current_xfields'] = explode('||',$row['current_xfields']);
 			
@@ -282,11 +294,21 @@ if( $collections_id ) {
 				$like_arr[] = "xfields like '%{$val}%'";
 			}
 			
-			$sql_countt = $db->super_query("SELECT COUNT(*) as count FROM " . PREFIX . "_post WHERE " . implode(' AND ', $like_arr));
+			$where_count[] = implode(' AND ', $like_arr);
 			
-			$row['num_elem'] = $sql_countt['count'];
 		}
 		
+		if( count($where_count) ) {
+			
+			$where_count = implode(' AND ', $where_count);
+			
+			$sql_countt = $db->super_query("SELECT COUNT(*) as count FROM " . PREFIX . "_post WHERE " . $where_count);
+			
+			$row['num_elem'] = $sql_countt['count'];
+			
+		}
+		
+		if( !$config['collections_empty_show'] AND !$row['num_elem'] ) continue;
 		
 		$tpl->set( '{num_elem}', $row['num_elem'] );
 		$tpl->set( '{url}', $url );
