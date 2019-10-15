@@ -259,7 +259,6 @@ HTML;
 	showRow( "Критерий сортировки подборок", "По умолчанию: {$config['news_sort']}", "<div style=\"float:right\">" . makeDropDown( array ("create_date" => $lang['opt_sys_sdate'], "date" => "Дате изменения", "num_elem" => "Количеству элементов", "name" => "По названию" ), "save_con[collections_sort]", ( $config['collections_sort'] ? $config['collections_sort'] : $config['news_sort'] ) ) . "</div>" );
 	showRow( $lang['opt_sys_an'], "<a onclick=\"javascript:Help('date'); return false;\" href=\"#\">$lang[opt_sys_and]</a>", "<div style=\"float:right\"><input  type=\"text\" class=\"form-control\" style=\"max-width:150px; text-align: center;\" name=\"save_con[collection_timestamp_active]\" value=\"".( $config['collection_timestamp_active'] ? $config['collection_timestamp_active'] : $config['timestamp_active'] )."\"></div>" );
 	showRow( "Логи действий в админ панели", "", "<div style=\"float:right\">" . makeCheckBox( "save_con[collections_log]", "{$config['collections_log']}" ) . "</div>" );
-	showRow( "Выводить пустые подборки на сайте", "", "<div style=\"float:right\">" . makeCheckBox( "save_con[collections_empty_show]", "{$config['collections_empty_show']}" ) . "</div>" );
 	
     echo <<<HTML
 	</table>
