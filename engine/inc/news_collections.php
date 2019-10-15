@@ -255,8 +255,11 @@ HTML;
 	showRow( "Разделитель подборок на странице новости", "По умолчанию - запятая", "<input autocomplete=\"off\" class=\"form-control\" type=\"text\" name=\"save_con[collection_separator]\" value=\"" . ( $config['collection_separator'] ? $config['collection_separator'] : ',' ) . "\" style=\"width:100%;max-width:50px;float:right\">" );
 	showRow( $lang['opt_sys_msort'], $lang['opt_sys_msortd']."<br>По умолчанию: {$config['news_msort']}", "<div style=\"float:right\">" . makeDropDown( array ("DESC" => $lang['opt_sys_mminus'], "ASC" => $lang['opt_sys_mplus'] ), "save_con[collections_news_msort]", ( $config['collections_news_msort'] ? $config['collections_news_msort'] : $config['news_msort'] ) ) . "</div>" );
 	showRow( $lang['opt_sys_sort'], $lang['opt_sys_sortd']."<br>По умолчанию: {$config['news_sort']}", "<div style=\"float:right\">" . makeDropDown( array ("date" => $lang['opt_sys_sdate'], "rating" => $lang['opt_sys_srate'], "news_read" => $lang['opt_sys_sview'], "title" => $lang['opt_sys_salph'] ), "save_con[collections_news_sort]", ( $config['collections_news_sort'] ? $config['collections_news_sort'] : $config['news_sort'] ) ) . "</div>" );
+	showRow( "Порядок сортировки подборок", "По умолчанию: {$config['news_msort']}", "<div style=\"float:right\">" . makeDropDown( array ("DESC" => $lang['opt_sys_mminus'], "ASC" => $lang['opt_sys_mplus'] ), "save_con[collections_msort]", ( $config['collections_msort'] ? $config['collections_msort'] : $config['news_msort'] ) ) . "</div>" );
+	showRow( "Критерий сортировки подборок", "По умолчанию: {$config['news_sort']}", "<div style=\"float:right\">" . makeDropDown( array ("create_date" => $lang['opt_sys_sdate'], "date" => "Дате изменения", "num_elem" => "Количеству элементов", "name" => "По названию" ), "save_con[collections_sort]", ( $config['collections_sort'] ? $config['collections_sort'] : $config['news_sort'] ) ) . "</div>" );
 	showRow( $lang['opt_sys_an'], "<a onclick=\"javascript:Help('date'); return false;\" href=\"#\">$lang[opt_sys_and]</a>", "<div style=\"float:right\"><input  type=\"text\" class=\"form-control\" style=\"max-width:150px; text-align: center;\" name=\"save_con[collection_timestamp_active]\" value=\"".( $config['collection_timestamp_active'] ? $config['collection_timestamp_active'] : $config['timestamp_active'] )."\"></div>" );
 	showRow( "Логи действий в админ панели", "", "<div style=\"float:right\">" . makeCheckBox( "save_con[collections_log]", "{$config['collections_log']}" ) . "</div>" );
+	showRow( "Выводить пустые подборки на сайте", "", "<div style=\"float:right\">" . makeCheckBox( "save_con[collections_empty_show]", "{$config['collections_empty_show']}" ) . "</div>" );
 	
     echo <<<HTML
 	</table>
@@ -439,6 +442,7 @@ HTML;
 		$filename_arr = explode('.', $image);
 		$type = end($filename_arr);
 		$poster = $folder_prefix . $image;
+		
 	} else $poster = '';
 	
 	
@@ -673,14 +677,16 @@ HTML;
 		$addedtime = date( "d.m.Y", $val['create_date'] );
 		$updatetime = date( "d.m.Y", $val['date'] );
 
+		$where_count = array();
+		
 		if( $val['current_tags'] ) {
 			
 			$val['current_tags'] = explode(', ',$val['current_tags']);
-			$where = "tags regexp '[[:<:]](" . implode('|', $val['current_tags']) . ")[[:>:]]'";
-			$sql_count = $db->super_query("SELECT COUNT(*) as count FROM " . PREFIX . "_post WHERE {$where}");
-			$val['num_elem'] = $sql_count['count'];
+			$where_count[] = "tags regexp '[[:<:]](" . implode('|', $val['current_tags']) . ")[[:>:]]'";
 			
-		} else if( $val['current_xfields'] ) {
+		} 
+		
+		if( $val['current_xfields'] ) {
 
 			$val['current_xfields'] = explode('||',$val['current_xfields']);
 			
@@ -690,9 +696,16 @@ HTML;
 				$like_arr[] = "xfields like '%{$val2}%'";
 			}
 			
-			$sql_count = $db->super_query("SELECT COUNT(*) as count FROM " . PREFIX . "_post WHERE " . implode(' AND ', $like_arr));
+			$where_count[] = implode(' AND ', $like_arr);
 			
-			$val['num_elem'] = $sql_count['count'];
+		}
+		
+		if( count($where_count) ) {
+
+			$where_count = implode(' AND ', $where_count);
+			$sql_count = $db->super_query("SELECT COUNT(*) as count FROM " . PREFIX . "_post WHERE " . $where_count);
+			
+			$val['num_elem'] = $sql_count['count'];		
 			
 		}
 		
@@ -1172,17 +1185,21 @@ HTML;
     
     <div class="form-group">
       <div class="row">
-        <div class="col-sm-4">
+        <div class="col-sm-3">
           <label class="control-label">Название</label>
           <input name="seach_name" id="seach_name" type="text" class="form-control" maxlength="190" autocomplete="off">
         </div>	
-		<div class="col-sm-4">
+		<div class="col-sm-3">
 			<label class="control-label">Теги</label>
 			<input id="search_current_tags" name="search_current_tags" type="text" class="form-control" value="" autocomplete="off">
 		</div>
-		<div class="col-sm-4">
+		<div class="col-sm-3">
 			<label class="control-label">Дополнительное поле</label>
 			<input id="xfields" name="xfields" type="text" class="form-control" value="" autocomplete="off">
+		</div>
+		<div class="col-sm-3">
+			<label class="control-label">Описание</label>
+			<input id="description" name="description" type="text" class="form-control" value="" autocomplete="off">
 		</div>		
       </div>
     </div>
@@ -1324,7 +1341,7 @@ function imagedelete( value ) {
 	
 				HideLoading('');
 				
-				$('.qq-upload-button').css({'display':'inline-block'})
+				$('.qq-upload-button').css({'display':'inline-block'});
 				$('#uploadedfile_poster').html('{$up_image_del}');
 				$('#poster').val('');
 
@@ -1360,11 +1377,12 @@ function imagedelete( value ) {
 
 	$('#search_news #b1').click(function(){
 		
-		name = $('#search_news #seach_name').val();
-		tags = $('#search_news #search_current_tags').val();
-		xfields = $('#search_news #xfields').val();
+		var name = $('#search_news #seach_name').val(),
+			tags = $('#search_news #search_current_tags').val(),
+			xfields = $('#search_news #xfields').val(),
+			description = $('#search_news #description').val();
 
-		$.post('/engine/ajax/controller.php?mod=find_news', {user_hash:'{$dle_login_hash}', type: 1, name: name, tags: tags, xfields: xfields}, function(data) {
+		$.post('/engine/ajax/controller.php?mod=find_news', {user_hash:'{$dle_login_hash}', type: 1, name: name, tags: tags, xfields: xfields, description: description}, function(data) {
 			
         if(data){
 			$('#search_news').modal('hide');	
@@ -1421,7 +1439,7 @@ function imagedelete( value ) {
 							$('#uploadfile-'+id+' .qq-status').html('успешно завершена');
 							$('#uploadedfile_poster').html( returnbox );
 							$('#poster').val(returnval);
-							
+							$('.qq-upload-button').css({'display':'none'});
 							setTimeout(function() {
 								$('#uploadfile-'+id).fadeOut('slow', function() { $(this).remove(); });
 							}, 1000);
