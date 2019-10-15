@@ -47,6 +47,9 @@ $tags = @$db->safesql ( $tags );
 if( preg_match( "/[\||\<|\>|\"|\!|\?|\$|\@|\/|\\\|\&\~\*\+]/", $_REQUEST['xfields'] ) ) $xfields = "";
 else $xfields = $db->safesql( htmlspecialchars( strip_tags( stripslashes( trim( $_REQUEST['xfields'] ) ) ), ENT_QUOTES, $config['charset'] ) );
 
+if( preg_match( "/[\||\<|\>|\"|\!|\?|\$|\@|\/|\\\|\&\~\*\+]/", $_REQUEST['description'] ) ) $description = "";
+else $description = $db->safesql( htmlspecialchars( strip_tags( stripslashes( trim( $_REQUEST['description'] ) ) ), ENT_QUOTES, $config['charset'] ) );
+
 $where = array();
 if( $name ) $where[] = "title LIKE '%{$name}%'";
 if( $tags ) {
@@ -70,6 +73,7 @@ if( $tags ) {
 
 }
 if( $xfields ) $where[] = "xfields LIKE '%{$xfields}%'";
+if( $description ) $where[] = "(short_story LIKE '%{$description}%' OR full_story LIKE '%{$description}%')";
 
 if( count($where) ) $where_line = implode(' AND ', $where);
 
