@@ -585,7 +585,7 @@ if( count($c_list) ) {
           $tmp_c[] = $row['id'];
           $c_list = implode(',', $tmp_c);
         
-      } else $c_list = $val;
+      } else $c_list = $row['id'];
 
       @unlink( ENGINE_DIR . '/cache/system/collections.php' );
       @unlink( ENGINE_DIR . '/cache/system/collections_title/collections_title_'.$val.'.php' );
@@ -740,7 +740,7 @@ $c_list = $db->safesql( implode( ',', $c_list ) );]]></replacecode>
             $tmp_c = explode(',', $getCollection['news_ids']);
             $tmp_c[] = $item_db[0];
             $c_list = implode(',', $tmp_c);
-        } else $c_list = $val;
+        } else $c_list = $item_db[0];
 
         @unlink( ENGINE_DIR . '/cache/system/collections.php' );
         @unlink( ENGINE_DIR . '/cache/system/collections_title/collections_title_'.$val.'.php' );
