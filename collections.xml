@@ -255,6 +255,44 @@ else $prev_page = $PHP_SELF . "?cstart=" . $prev;]]></searchcode>
 			<replacecode><![CDATA[if( $do == 'collections' ) $next = $url_page . '/page/' . $next_page;
 else $next = $url_page . '/page/' . $next_page . '/';]]></replacecode>
 		</operation>
+		<operation action="replace">
+			<searchcode><![CDATA[if( $cstart != $enpages_count ) {
+						
+	if( $config['allow_alt_url'] ) {
+							
+		$pages .= $nav_prefix . "<a href=\"" . $url_page . "/page/{$enpages_count}/\">{$enpages_count}</a>";
+							
+	} else {
+							
+		if ($user_query) $pages .= $nav_prefix . "<a href=\"$PHP_SELF?cstart={$enpages_count}&amp;$user_query\">{$enpages_count}</a>";
+		else $pages .= $nav_prefix . "<a href=\"$PHP_SELF?cstart={$enpages_count}\">{$enpages_count}</a>";
+							
+	}
+					
+}]]></searchcode>
+			<replacecode><![CDATA[if( $cstart != $enpages_count ) {
+						
+	if( $config['allow_alt_url'] ) {
+							
+		$pages .= $nav_prefix . "<a href=\"" . $url_page . "/page/{$enpages_count}/\">{$enpages_count}</a>";
+							
+	} else {
+      
+		if( $do == 'collections' ) {
+          
+          if ($user_query) $pages .= $nav_prefix . "<a href=\"$PHP_SELF{$ucid}&cstart={$enpages_count}&amp;$user_query\">{$enpages_count}</a>";
+          else $pages .= $nav_prefix . "<a href=\"$PHP_SELF{$ucid}&cstart={$enpages_count}\">{$enpages_count}</a>";
+          
+        } else {
+          
+          if ($user_query) $pages .= $nav_prefix . "<a href=\"$PHP_SELF?cstart={$enpages_count}&amp;$user_query\">{$enpages_count}</a>";
+          else $pages .= $nav_prefix . "<a href=\"$PHP_SELF?cstart={$enpages_count}\">{$enpages_count}</a>";
+          
+        }
+	}
+					
+}]]></replacecode>
+		</operation>		
 	</file>
 	<file name="engine/modules/show.full.php">
 		<operation action="before">
