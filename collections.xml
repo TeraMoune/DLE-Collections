@@ -292,7 +292,7 @@ else $next = $url_page . '/page/' . $next_page . '/';]]></replacecode>
 	}
 					
 }]]></replacecode>
-		</operation>		
+		</operation>
 	</file>
 	<file name="engine/modules/show.full.php">
 		<operation action="before">
@@ -553,7 +553,7 @@ $collections_list = $db->safesql( implode( ',', $collections_list ) );
 
 $c_allow = $user_group[$member_id['user_group']]['collections_allow_edit'];
 
-if( count($c_list) ) {
+if( count($c_list) AND $c_list[0] != 0 ) {
 
 	if( !$c_allow AND $member_id['user_group'] != "1" ) {
 		$stop .= "<li>Вы не можете указывать новостям подборки.</li>";
@@ -699,7 +699,8 @@ foreach( $collections as $value ) {
 }
 
 $c_allow = explode( ',', $user_group[$member_id['user_group']]['collections_allow_edit'] );
-if( count($c_list) ) {
+
+if( count($c_list) AND $c_list[0] != 0 ) {
   
 	if( !$c_allow AND $member_id['user_group'] != "1" ) msg( "error", $lang['addnews_error'], "Вы не можете указывать новостям подборки.", "javascript:history.go(-1)" );
 
@@ -740,6 +741,7 @@ $c_list = $db->safesql( implode( ',', $c_list ) );]]></replacecode>
             $tmp_c = explode(',', $getCollection['news_ids']);
             $tmp_c[] = $item_db[0];
             $c_list = implode(',', $tmp_c);
+          
         } else $c_list = $item_db[0];
 
         @unlink( ENGINE_DIR . '/cache/system/collections.php' );
@@ -812,7 +814,120 @@ $c_list = $db->safesql( implode( ',', $c_list ) );]]></replacecode>
 	<file name="engine/ajax/collections_menu.php">
 		<operation action="create">
 			<replacecode><![CDATA[<?php
-/* Зарезервировано для чего-то :D */
+if(!defined('DATALIFEENGINE')) {
+	header( "HTTP/1.1 403 Forbidden" );
+	header ( 'Location: ../../' );
+	die( "Hacking attempt!" );
+}
+
+require_once (DLEPlugins::Check(ENGINE_DIR . '/classes/templates.class.php'));
+
+$tpl = new dle_template( );
+$tpl->dir = ROOT_DIR . '/templates/' . $config['skin'];
+define( 'TEMPLATE_DIR', $tpl->dir );
+
+if( !$is_logged ) die( "error" );
+
+$news_id = intval( $_REQUEST['news_id'] );
+
+if( !$news_id OR $news_id < 1) die( "error" );
+
+if( $_REQUEST['user_hash'] == "" OR $_REQUEST['user_hash'] != $dle_login_hash ) {
+
+	die ("error");
+	
+}
+
+$c_allow = explode( ',', $user_group[$member_id['user_group']]['collections_allow_edit'] );
+if( !$c_allow ) die ("access denied");
+
+$collections_info = get_vars ( "collections" );
+
+if (!is_array ( $collections_info )) {
+	$collections_info = array ();
+
+	$db->query ( "SELECT id, user_name, name, alt_url, descr, num_elem, date, create_date, cover FROM " . PREFIX . "_news_collections ORDER BY id ASC" );
+	while ( $row = $db->get_row () ) {
+
+		$collections_info[$row['id']] = array ();
+
+		foreach ( $row as $key => $value ) {
+			$collections_info[$row['id']][$key] = stripslashes ( $value );
+		}
+
+	}
+	set_vars ( "collections", $collections_info );
+	$db->free ();
+}
+	
+if( $_REQUEST['action'] == "add" ) {
+
+
+	$buffer = "ok";
+
+} elseif( $_REQUEST['action'] == "del" ) {
+	
+
+	$buffer = "ok";
+
+} else {
+  
+  	$sql = $db->super_query( "SELECT collections FROM " . PREFIX . "_post WHERE id = '{$news_id}'" );
+  
+  	$tpl->load_template( 'collections_editnews.tpl' );
+  
+	if( $sql['collections'] ) {
+    /*	$c_return = "";
+		$c_list = explode( ',', $sql['collections'] );
+
+ 		preg_match("#\[c-list\](.+?)\[/c-list\]#is", $tpl->copy_template, $find_c_template);
+
+		$c_list_template = array();
+
+		foreach( $c_list as $val ) {		
+	
+			$temp = $find_c_template[1];	
+			$temp = str_ireplace("{cover}", $config['http_home_url'] . 'uploads/posts/' . $collections_info[$val]['cover'], $temp);
+			$temp = str_ireplace("{name}",$collections_info[$val]['name'], $temp);
+          	$temp = str_ireplace("{num_elem}",$collections_info[$val]['num_elem'], $temp);
+          	$temp = preg_replace("#\[not-collections\](.+?)\[/not-collections\]#is", "", $temp);
+          	$temp = str_ireplace("[c-template]", "", $temp);
+          	$temp = str_ireplace("[/c-template]", "", $temp);
+			$c_list_template[] = $temp;
+				
+		}
+
+		if ( $find_c_template[0] ) $tpl->copy_template = str_replace($find_c_template[0], implode('', $c_list_template), $tpl->copy_template);   	
+    */
+  
+  	} else {
+
+     	/*$tpl->set_block( "'\\[c-template\\](.*?)\\[/c-template\\]'si", "" );
+		$tpl->set( '[not-collections]', "" );
+		$tpl->set( '[/not-collections]', "" );
+ 		$tpl->set( '[c-list]', "" );
+		$tpl->set( '[/c-list]', "" );*/   
+      
+    }
+  
+    $c_list = explode( ',', $sql['collections'] );
+    foreach( $collections_info as $val ) {
+        if( in_array($val['id'], $c_list ) ) $c_opt .= '<option value="'.$val['id'].'" selected>'.$val['name'].'</option>';
+        else $c_opt .= '<option value="'.$val['id'].'">'.$val['name'].'</option>';
+    }
+      
+    $collections_list = "<select data-placeholder=\"Выберите подборки\" name=\"collections_list[]\" id=\"collections\"  multiple=\"multiple\">";
+    $collections_list .= $c_opt;
+    $collections_list .= "</select>";
+    $tpl->set( '{collections}', $collections_list );  
+  
+	$tpl->compile( 'result' );
+	$tpl->clear();
+  	$tpl->result['result'] = str_replace( '{THEME}', $config['http_home_url'] . 'templates/' . $config['skin'], $tpl->result['result'] );
+  	$buffer = $tpl->result['result'];
+}
+
+echo $buffer;
 ?>]]></replacecode>
 		</operation>
 	</file>
@@ -865,20 +980,31 @@ $c_list = $db->safesql( implode( ',', $c_list ) );]]></replacecode>
       
       $tpl->set( '[collections-alllist]', '' );
       $tpl->set( '[/collections-alllist]', '' );
+      $tpl->set( '{c-title}', $config['collection_title'] );
+      $tpl->set( '{c-descr}', $config['collection_description'] );      
       
-    } else $tpl->set_block( "'\\[collections-alllist\\](.*?)\\[/collections-alllist\\]'si", "" );
-    $tpl->set( '{c-title}', $config['collection_title'] );
-    $tpl->set( '{c-descr}', $config['collection_description'] );
-  
+    } else {
+      
+      $tpl->set_block( "'\\[collections-alllist\\](.*?)\\[/collections-alllist\\]'si", "" );
+      $tpl->set( '{c-title}', '' );
+      $tpl->set( '{c-descr}', '' );
+      
+    }
+ 
 }]]></replacecode>
 		</operation>
 		<operation action="after">
 			<searchcode><![CDATA[$tpl->compile ( 'main' );]]></searchcode>
-			<replacecode><![CDATA[if (stripos ( $tpl->result['main'], "{collections ids-news" ) !== false) {
-	$tpl->result['main'] = preg_replace_callback ( "#\\{collections ids-news(.+?)\\}#i", "show_news_collections", $tpl->result['main'] );
-}
-if (stripos ( $tpl->result['main'], "{collections" ) !== false) {
+			<replacecode><![CDATA[if (stripos ( $tpl->result['main'], "{collections" ) !== false) {
 	$tpl->result['main'] = preg_replace_callback ( "#\\{collections(.+?)?\\}#i", "show_collections", $tpl->result['main'] );
+}]]></replacecode>
+		</operation>
+		<operation action="before">
+			<searchcode><![CDATA[if (stripos ( $tpl->copy_template, "{custom" ) !== false) {
+	$tpl->copy_template = preg_replace_callback ( "#\\{custom(.+?)\\}#i", "custom_print", $tpl->copy_template );
+}]]></searchcode>
+			<replacecode><![CDATA[if (stripos ( $tpl->copy_template, "{collections ids-news" ) !== false) {
+	$tpl->copy_template = preg_replace_callback ( "#\\{collections ids-news(.+?)\\}#i", "show_news_collections", $tpl->copy_template );
 }]]></replacecode>
 		</operation>
 	</file>
@@ -1177,7 +1303,7 @@ function show_news_collections( $matches=array() ) {
 		
 	$param_str = trim($matches[1]);
 
-	if( preg_match( "#id=['\"](.+?)['\"]#i", $param_str, $match ) ) {
+	if( preg_match( "#id=['\"]?(.+?)['\"]?#i", $param_str, $match ) ) {
 		
 		$id = intval(trim($match[1]));
 
