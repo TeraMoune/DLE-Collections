@@ -23,6 +23,9 @@
 ---
 
 # Шаблоны
+`addnews.tpl`
+ -		[owner-c] {collections} [/owner-c] - Выводит выборку подборок при добавлении новости.
+
 `login.tpl` 
   - {favorites-collections-link} - Выводит ссылку на раздел закладок подборок.
 
