@@ -27,7 +27,7 @@ if( $collections_id ) {
 
 	$config['collection_news_number'] = $config['collection_news_number'] ? $config['collection_news_number'] : 10;
 	$collections = $db->super_query("SELECT * FROM `".PREFIX."_news_collections` WHERE id = '{$collections_id}'");
-	
+	$c_title = $collections['name'];
 	if( $collections['metatitle'] ) {
 		
 		$seo_title = $collections['metatitle'];
@@ -35,7 +35,7 @@ if( $collections_id ) {
 	} else {
 		
 		$seo_title = $collections['name'];
-		if( $collections['current_tags'] ) $seo_title .= ": " . $collections['current_tags'];
+		if( $collections['current_tags'] ) $c_title .= ": " . $collections['current_tags'];	
 			
 	}
 	
@@ -160,7 +160,7 @@ if( $collections_id ) {
 			
 			if( !in_array( $row['id'], $fav_arr ) ) {
 
-				$tpl->set( '{favorites}', "<a id=\"fav-id-" . $row['id'] . "\" class=\"collections_fav\" href=\"#\" onclick=\"doFavorites_collections('" . $row['id'] . "', 'plus', 0); return false;\" title=\"" . $lang['news_addfav'] . "\"><svg class=\"icon icon-star-full\"><use xlink:href=\"#icon-star-full\"></use></svg></a>" );
+				$tpl->set( '{favorites}', "<a id=\"fav-id-" . $row['id'] . "\" class=\"collections_fav\" href=\"#\" onclick=\"doFavorites_collections('" . $row['id'] . "', 'plus', 0); return false;\" title=\"" . $lang['news_addfav'] . "\"><svg class=\"icon icon-star-full2\"><use xlink:href=\"#icon-star-full2\"></use></svg></a>" );
 				$tpl->set( '[add-favorites]', "<a id=\"fav-id-" . $row['id'] . "\" class=\"collections_fav\" onclick=\"doFavorites_collections('" . $row['id'] . "', 'plus', 0); return false;\" href=\"#\">" );
 				$tpl->set( '[/add-favorites]', "</a>" );
 				$tpl->set_block( "'\\[del-favorites\\](.*?)\\[/del-favorites\\]'si", "" );
