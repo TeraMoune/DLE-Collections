@@ -57,7 +57,7 @@ DELETE FROM `{prefix}_admin_sections` WHERE name = 'news_collections';]]></mysql
 		if( $seo_tags ) $metatags['keywords'] = $seo_tags;
 		$metatags['header_title'] = $seo_title;
 		$metatags['description'] = $seo_descr;
-		$titl_e = $seo_title;           
+		$titl_e = $c_title;
  
 		if ( ( isset($_GET['cstart']) AND intval($_GET['cstart']) > 1 ) ){
 
