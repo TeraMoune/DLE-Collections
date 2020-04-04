@@ -24,6 +24,7 @@
   `current_xfields` text NOT NULL,
   `keywords` text NOT NULL,
   `metatitle` varchar(255) NOT NULL DEFAULT '',
+  `metadescr` varchar(300) NOT NULL DEFAULT '',
   PRIMARY KEY (`id`),
   KEY `user_name` (`user_name`),
   KEY `name` (`name`),
@@ -724,59 +725,68 @@ $c_list = $db->safesql( implode( ',', $c_list ) );]]></replacecode>
 			<searchcode><![CDATA[if( $add_vote ) {]]></searchcode>
 			<replacecode><![CDATA[if( $c_list ) {
   
-  $c_list = explode( ',', $c_list );
-  $tmp_c = explode( ',', $item_db[9] );
-  $addC_tmp = array_diff ($c_list, $tmp_c);
-  $removeC_tmp = array_diff ($tmp_c, $c_list);  
-  $thistime = date( "Y-m-d H:i:s", time() );
+	$c_list = explode( ',', $c_list );
+	$tmp_c = explode( ',', $item_db[9] );
+	$addC_tmp = array_diff ($c_list, $tmp_c);
+	$removeC_tmp = array_diff ($tmp_c, $c_list);  
+	$thistime = date( "Y-m-d H:i:s", time() );
   
-  if( count($addC_tmp) ) {
+	if( count($addC_tmp) ) {
 
-    foreach( $addC_tmp as $val ) {
-      
-        $getCollection = $db->super_query("SELECT news_ids FROM ".PREFIX."_news_collections WHERE id = '{$val}'");	
+		foreach( $addC_tmp as $val ) {
+		  
+			if( $val ) {
+				
+				$getCollection = $db->super_query("SELECT news_ids FROM ".PREFIX."_news_collections WHERE id = '{$val}'");	
 
-        if( $getCollection['news_ids'] ) {
-          
-            $tmp_c = explode(',', $getCollection['news_ids']);
-            $tmp_c[] = $item_db[0];
-            $c_list = implode(',', $tmp_c);
-          
-        } else $c_list = $item_db[0];
+				if( $getCollection['news_ids'] ) {
+					  
+				$tmp_c = explode(',', $getCollection['news_ids']);
+				$tmp_c[] = $item_db[0];
+				$c_list = implode(',', $tmp_c);
+					  
+				} else $c_list = $item_db[0];
 
-        @unlink( ENGINE_DIR . '/cache/system/collections.php' );
-        @unlink( ENGINE_DIR . '/cache/system/collections_title/collections_title_'.$val.'.php' );
-        clear_cache( array('collections_news_', 'cblock_list_') );
-        $db->query("UPDATE ".PREFIX."_news_collections SET date = '{$thistime}', num_elem = num_elem+1, news_ids = '{$c_list}' WHERE id = '{$val}'");
-    
-    }
+				@unlink( ENGINE_DIR . '/cache/system/collections.php' );
+				@unlink( ENGINE_DIR . '/cache/system/collections_title/collections_title_'.$val.'.php' );
+				clear_cache( array('collections_news_', 'cblock_list_') );
+				$db->query("UPDATE ".PREFIX."_news_collections SET date = '{$thistime}', num_elem = num_elem+1, news_ids = '{$c_list}' WHERE id = '{$val}'");
+			  
+			}
+		  
+		}
 
-  }
+	}
 
-  if( count($removeC_tmp) ) {
+	if( count($removeC_tmp) ) {
 
-    foreach( $removeC_tmp as $val ) {
+		foreach( $removeC_tmp as $val ) {
 
-      $getCollection = $db->super_query("SELECT news_ids FROM ".PREFIX."_news_collections WHERE id = '{$val}'");	
+			if( $val ) {
+			  
+				$getCollection = $db->super_query("SELECT news_ids FROM ".PREFIX."_news_collections WHERE id = '{$val}'");	
 
-      $list = explode(',', $getCollection['news_ids']);
-      $i = 0;
+				$list = explode(',', $getCollection['news_ids']);
+				$i = 0;
 
-      foreach ( $list as $id ) {
+				foreach ( $list as $id ) {
 
-        if( $id == $item_db[0] ) unset( $list[$i] );
-        $i ++;
+					if( $id == $item_db[0] ) unset( $list[$i] );
+					$i ++;
 
-      }
+				}
 
-      if( count( $list ) ) $c_list = $db->safesql(implode( ",", $list ));
-      else $c_list = "";
+				if( count( $list ) ) $c_list = $db->safesql(implode( ",", $list ));
+				else $c_list = "";
 
-      @unlink( ENGINE_DIR . '/cache/system/collections_title/collections_title_'.$val.'.php' );
-      $db->query("UPDATE ".PREFIX."_news_collections SET num_elem = num_elem - 1, news_ids = '{$c_list}' WHERE id = '{$val}'");
-    }
+				@unlink( ENGINE_DIR . '/cache/system/collections_title/collections_title_'.$val.'.php' );
+				$db->query("UPDATE ".PREFIX."_news_collections SET num_elem = num_elem - 1, news_ids = '{$c_list}' WHERE id = '{$val}'");
+			  
+			}
+		  
+		}
 
-  }
+	}
   
 } else {
   
@@ -860,15 +870,111 @@ if (!is_array ( $collections_info )) {
 	$db->free ();
 }
 	
-if( $_REQUEST['action'] == "add" ) {
+if( $_REQUEST['action'] == "save" ) {
 
+  	$sql = $db->super_query( "SELECT collections FROM " . PREFIX . "_post WHERE id = '{$news_id}'" );
+	$c_list = $c_list_post = $_POST['collections'];
+	if( $c_list ) {
+	  
+	  $c_list = explode( ',', $c_list );
+	  $tmp_c = explode( ',', $sql['collections'] );
+	  $addC_tmp = array_diff ($c_list, $tmp_c);
+	  $removeC_tmp = array_diff ($tmp_c, $c_list);  
+	  $thistime = date( "Y-m-d H:i:s", time() );
+	  
+	  if( count($addC_tmp) ) {
 
-	$buffer = "ok";
+		foreach( $addC_tmp as $val ) {
+			
+			if( $val ) {	
+			  
+				$getCollection = $db->super_query("SELECT news_ids FROM ".PREFIX."_news_collections WHERE id = '{$val}'");	
 
-} elseif( $_REQUEST['action'] == "del" ) {
+				if( $getCollection['news_ids'] ) {
+				  
+					$tmp_c = explode(',', $getCollection['news_ids']);
+					$tmp_c[] = $news_id;
+					$c_list = implode(',', $tmp_c);
+				  
+				} else $c_list = $item_db[0];
+
+				@unlink( ENGINE_DIR . '/cache/system/collections.php' );
+				@unlink( ENGINE_DIR . '/cache/system/collections_title/collections_title_'.$val.'.php' );
+				clear_cache( array('collections_news_', 'cblock_list_') );
+				$db->query("UPDATE ".PREFIX."_news_collections SET date = '{$thistime}', num_elem = num_elem+1, news_ids = '{$c_list}' WHERE id = '{$val}'");
+				
+			}
+		
+		}
+
+	  }
+
+	  if( count($removeC_tmp) ) {
+
+		foreach( $removeC_tmp as $val ) {
+
+			if( $val ) {
+				
+			  $getCollection = $db->super_query("SELECT news_ids FROM ".PREFIX."_news_collections WHERE id = '{$val}'");	
+
+			  $list = explode(',', $getCollection['news_ids']);
+			  $i = 0;
+
+			  foreach ( $list as $id ) {
+
+				if( $id == $news_id ) unset( $list[$i] );
+				$i ++;
+
+			  }
+
+			  if( count( $list ) ) $c_list = $db->safesql(implode( ",", $list ));
+			  else $c_list = "";
+
+			  @unlink( ENGINE_DIR . '/cache/system/collections_title/collections_title_'.$val.'.php' );
+			  $db->query("UPDATE ".PREFIX."_news_collections SET num_elem = num_elem - 1, news_ids = '{$c_list}' WHERE id = '{$val}'");
+			  
+			}
+		  
+		}
+
+	  }
+	  
+	} else {
+	  
+	  if( $sql['collections'] ) {
+		
+		$tmp_c = explode( ',', $sql['collections'] );
+
+		foreach( $tmp_c as $val ) {
+
+			$getCollection = $db->super_query("SELECT news_ids FROM ".PREFIX."_news_collections WHERE id = '{$val}'");
+		  
+			$list = explode(',', $getCollection['news_ids']);
+			$i = 0;
+
+			foreach ( $list as $id ) {
+
+				if( $id == $news_id ) unset( $list[$i] );
+				$i ++;
+
+			}
+
+			if( count( $list ) ) $c_list = $db->safesql(implode( ",", $list ));
+			else $c_list = "";
+
+			@unlink( ENGINE_DIR . '/cache/system/collections_title/collections_title_'.$val.'.php' );  
+			$db->query("UPDATE ".PREFIX."_news_collections SET num_elem = num_elem - 1, news_ids = '{$c_list}' WHERE id = '{$val}'");
+
+		}    
+		
+	  }
+	  
+	}
 	
+	$db->query("UPDATE ".PREFIX."_post SET collections = '{$c_list_post}' WHERE id = '{$news_id}'");
 
 	$buffer = "ok";
+
 
 } else {
   
@@ -876,50 +982,20 @@ if( $_REQUEST['action'] == "add" ) {
   
   	$tpl->load_template( 'collections_editnews.tpl' );
   
-	if( $sql['collections'] ) {
-    /*	$c_return = "";
-		$c_list = explode( ',', $sql['collections'] );
-
- 		preg_match("#\[c-list\](.+?)\[/c-list\]#is", $tpl->copy_template, $find_c_template);
-
-		$c_list_template = array();
-
-		foreach( $c_list as $val ) {		
-	
-			$temp = $find_c_template[1];	
-			$temp = str_ireplace("{cover}", $config['http_home_url'] . 'uploads/posts/' . $collections_info[$val]['cover'], $temp);
-			$temp = str_ireplace("{name}",$collections_info[$val]['name'], $temp);
-          	$temp = str_ireplace("{num_elem}",$collections_info[$val]['num_elem'], $temp);
-          	$temp = preg_replace("#\[not-collections\](.+?)\[/not-collections\]#is", "", $temp);
-          	$temp = str_ireplace("[c-template]", "", $temp);
-          	$temp = str_ireplace("[/c-template]", "", $temp);
-			$c_list_template[] = $temp;
-				
-		}
-
-		if ( $find_c_template[0] ) $tpl->copy_template = str_replace($find_c_template[0], implode('', $c_list_template), $tpl->copy_template);   	
-    */
-  
-  	} else {
-
-     	/*$tpl->set_block( "'\\[c-template\\](.*?)\\[/c-template\\]'si", "" );
-		$tpl->set( '[not-collections]', "" );
-		$tpl->set( '[/not-collections]', "" );
- 		$tpl->set( '[c-list]', "" );
-		$tpl->set( '[/c-list]', "" );*/   
-      
-    }
-  
     $c_list = explode( ',', $sql['collections'] );
     foreach( $collections_info as $val ) {
+		
         if( in_array($val['id'], $c_list ) ) $c_opt .= '<option value="'.$val['id'].'" selected>'.$val['name'].'</option>';
         else $c_opt .= '<option value="'.$val['id'].'">'.$val['name'].'</option>';
+		
     }
       
     $collections_list = "<select data-placeholder=\"Выберите подборки\" name=\"collections_list[]\" id=\"collections\"  multiple=\"multiple\">";
     $collections_list .= $c_opt;
     $collections_list .= "</select>";
+	
     $tpl->set( '{collections}', $collections_list );  
+    $tpl->set( '{id}', $news_id );  
   
 	$tpl->compile( 'result' );
 	$tpl->clear();
@@ -938,7 +1014,8 @@ echo $buffer;
 
   	$collections['name'] = stripslashes( $collections['name'] );
 	$tpl->set( '{c-title}', str_replace("&amp;amp;", "&amp;",  htmlspecialchars( $collections['name'], ENT_QUOTES, $config['charset'] ) ) );
-    
+	if( $collections['metadescr'] ) $tpl->set( '{c-meta-descr}', $collections['metadescr'] );
+    else $tpl->set( '{c-meta-descr}', "" );
   	if( $collections['descr'] ) {
       
       	$collections['descr'] = stripslashes($collections['descr']);
@@ -990,7 +1067,7 @@ echo $buffer;
       $tpl->set( '{c-descr}', '' );
       
     }
- 
+	$tpl->set( '{c-meta-descr}', "" );
 }]]></replacecode>
 		</operation>
 		<operation action="after">
