@@ -40,7 +40,9 @@ if( $collections_id ) {
 	}
 	
 	$seo_tags = $collections['keywords'];
-	$seo_descr = strip_tags($collections['descr']);
+	
+	if( $collections['metadescr'] ) $seo_descr = strip_tags($collections['metadescr']);
+	else $seo_descr = strip_tags($collections['descr']);
 
 	if ( $is_logged and ( $user_group[$member_id['user_group']]['allow_edit'] and !$user_group[$member_id['user_group']]['allow_all_edit'] ) ) $config['allow_cache'] = false;
 	if ( isset($_SESSION['dle_no_cache']) AND $_SESSION['dle_no_cache'] ) $config['allow_cache'] = false;
