@@ -126,7 +126,7 @@ if( !defined( 'DATALIFEENGINE' ) OR !defined( 'LOGGED_IN' ) ) {
 		} else return false;
 
         return $error_code;
-    }	
+    }
 	
 	function showRow($title = "", $description = "", $field = "", $class = "") {
 		echo "<tr>
@@ -226,7 +226,7 @@ if( $action == "settings" ) {
 	msg( "info", $lang['opt_sysok'], $lang['opt_sysok_1'], "?mod=news_collections" );		
 	} else {
 
-	echoheader( $lang['media_gallery_settings'], $lang['media_gallery_desc'] );
+	echoheader( "Подборки", "Общие настройки" );
 
 	echo <<<HTML
 <form action="" method="post">
@@ -259,6 +259,7 @@ HTML;
 	showRow( "Критерий сортировки подборок", "По умолчанию: {$config['news_sort']}", "<div style=\"float:right\">" . makeDropDown( array ("create_date" => $lang['opt_sys_sdate'], "date" => "Дате изменения", "num_elem" => "Количеству элементов", "name" => "По названию" ), "save_con[collections_sort]", ( $config['collections_sort'] ? $config['collections_sort'] : $config['news_sort'] ) ) . "</div>" );
 	showRow( $lang['opt_sys_an'], "<a onclick=\"javascript:Help('date'); return false;\" href=\"#\">$lang[opt_sys_and]</a>", "<div style=\"float:right\"><input  type=\"text\" class=\"form-control\" style=\"max-width:150px; text-align: center;\" name=\"save_con[collection_timestamp_active]\" value=\"".( $config['collection_timestamp_active'] ? $config['collection_timestamp_active'] : $config['timestamp_active'] )."\"></div>" );
 	showRow( "Логи действий в админ панели", "", "<div style=\"float:right\">" . makeCheckBox( "save_con[collections_log]", "{$config['collections_log']}" ) . "</div>" );
+	showRow( "Выводить пустые подборки на сайте", "", "<div style=\"float:right\">" . makeCheckBox( "save_con[collections_empty_show]", "{$config['collections_empty_show']}" ) . "</div>" );
 	
     echo <<<HTML
 	</table>
@@ -469,7 +470,7 @@ HTML;
 		msg( "error", array('javascript:history.go(-1)' => "Добавление новой подборки на сайт", '' => $lang['addnews_error'] ), "Слишком длинное имя.", "javascript:history.go(-1)" );
 	}
 		
-	$db->query( "INSERT INTO " . PREFIX . "_news_collections (user_name, name, alt_url, descr, date, create_date, cover, news_ids, current_tags, current_xfields, num_elem, keywords, metatitle) values ('".$db->safesql($member_id['name'])."', '{$name}', '{$alt_url}', '{$descr}', '{$thistime}', '{$thistime}', '{$poster}', '{$news_ids}', '{$current_tags}', '{$current_xfields}', '{$num_elem}', '{$metatags['keywords']}', '{$metatags['title']}')" );
+	$db->query( "INSERT INTO " . PREFIX . "_news_collections (user_name, name, alt_url, descr, date, create_date, cover, news_ids, current_tags, current_xfields, num_elem, keywords, metatitle, metadescr) values ('".$db->safesql($member_id['name'])."', '{$name}', '{$alt_url}', '{$descr}', '{$thistime}', '{$thistime}', '{$poster}', '{$news_ids}', '{$current_tags}', '{$current_xfields}', '{$num_elem}', '{$metatags['keywords']}', '{$metatags['title']}', '{$metatags['description']}')" );
 
 	$id = $db->insert_id();
 	
@@ -541,7 +542,7 @@ HTML;
 	
 	$js_array[] = "engine/classes/uploads/html5/fileuploader.js";
 	
-	echoheader( $lang['media_gallery_settings'], $lang['media_gallery_desc'] );
+	echoheader( "Подборки", "Список подборок" );
 
 	if ( !$user_group[$member_id['user_group']]['allow_html'] ) $config['allow_admin_wysiwyg'] = 0;	
 
@@ -616,6 +617,10 @@ HTML;
         <div class="col-sm-6">
           <label>Мета тег KEYWORDS</label>
 		  <input name="keywords" type="text" class="form-control" maxlength="190" autocomplete="off">
+        </div>
+        <div class="col-sm-6">
+          <label>Мета тег DESCRIPTION</label>
+		  <input name="descr" type="text" class="form-control" maxlength="300" autocomplete="off" placeholder="Если оставить пустым будет использовано Описание">
         </div>		
         <div class="col-sm-12" style="margin-top:10px;">
           <label>Описание</label>
@@ -776,6 +781,16 @@ function checkxf ()	{
 	    delay: 500
 	  },
 	  createTokensOnBlur:true
+	});
+	
+	$('#current_xfields').tokenfield({
+	  autocomplete: {
+	    source: '/engine/ajax/controller.php?mod=find_tags&user_hash={$dle_login_hash}&mode=xfield',
+		minLength: 2,
+		delimiter: ',',
+	    delay: 500
+	  },
+	  createTokensOnBlur:true
 	});	
 
 	$('.dellink').click(function(){
@@ -859,7 +874,7 @@ function checkxf ()	{
             emptyError: "Файл {file} пустой, выберите файлы повторно."
         },
 		debug: false
-    });	
+    });
 	
   });
 </script>  
@@ -991,7 +1006,7 @@ HTML;
 	
 	if( $config['collections_log'] ) $db->query( "INSERT INTO " . USERPREFIX . "_admin_logs (name, date, ip, action, extras) values ('".$db->safesql($member_id['name'])."', '{$_TIME}', '{$_IP}', '48', 'Изменение подборки: <a href=\"{$config['http_home_url']}{$config['admin_path']}?mod=news_collections&action=edit&id={$id}\">" . $db->safesql($name) . "</a>')" );
 		
-	$db->query("UPDATE ".PREFIX."_news_collections SET name = '{$name}', alt_url = '{$alt_url}', descr = '{$descr}', news_ids = '{$news_ids}', current_tags = '{$current_tags}', current_xfields = '{$current_xfields}', num_elem = '{$num_elem}', metatitle = '{$metatags['title']}', keywords = '{$metatags['keywords']}', cover = '{$poster}', date = '{$thistime}' WHERE id = '{$id}'");	
+	$db->query("UPDATE ".PREFIX."_news_collections SET name = '{$name}', alt_url = '{$alt_url}', descr = '{$descr}', news_ids = '{$news_ids}', current_tags = '{$current_tags}', current_xfields = '{$current_xfields}', num_elem = '{$num_elem}', metatitle = '{$metatags['title']}', metadescr = '{$metatags['description']}', keywords = '{$metatags['keywords']}', cover = '{$poster}', date = '{$thistime}' WHERE id = '{$id}'");	
 
 	if( $news_ids != $row['news_ids'] ) {
 		
@@ -1058,7 +1073,7 @@ HTML;
 
 	}
 
-	$_SESSION['admin_referrer'] = "?mod=news_collections&amp;action=list";	
+	//$_SESSION['admin_referrer'] = "?mod=news_collections&amp;action=list";	
 	
 	include_once (DLEPlugins::Check(ENGINE_DIR . '/classes/parse.class.php'));
 
@@ -1161,7 +1176,7 @@ HTML;
 
 	$js_array[] = "engine/classes/uploads/html5/fileuploader.js";
 	
-	echoheader( "<i class=\"fa fa-pencil-square-o position-left\"></i><span class=\"text-semibold\">Редактирование подборки</span>", array($_SESSION['admin_referrer'] => $lang['edit_all_title'], '' => "Редактирование подборки" ) );	
+	echoheader( "<i class=\"fa fa-pencil-square-o position-left\"></i><span class=\"text-semibold\">Редактирование подборки</span>", array( $config['admin_path'].'?mod=news_collections&action=list' => $lang['edit_all_title'], '' => "Редактирование подборки" ) );
 	
 	if ( !$user_group[$member_id['user_group']]['allow_html'] ) $config['allow_admin_wysiwyg'] = 0;
 	
@@ -1223,31 +1238,38 @@ HTML;
 						</div>
 						</div>		
 							 
-						<div class="bl-r">
+						<div class="bl-r" style="height: auto;">
 							<div class="form-group">
-							  <label class="control-label col-sm-2">Название</label>
-							  <div class="col-sm-10">
+							  <label class="control-label col-sm-3">Название</label>
+							  <div class="col-sm-9">
 								<input type="text" class="form-control" name="name" id="name" value="{$row['name']}" autocomplete="off" maxlength="190">
 							  </div>
 							 </div>
 
 							<div class="form-group">
-							  <label class="control-label col-sm-2">ЧПУ URL подборки</label>
-							  <div class="col-sm-10">
+							  <label class="control-label col-sm-3">ЧПУ URL подборки</label>
+							  <div class="col-sm-9">
 								<input type="text" class="form-control" name="alt_url" id="alt_url" value="{$row['alt_url']}" autocomplete="off" maxlength="190">
 							  </div>
 							 </div>
 							 
 							<div class="form-group">
-							  <label class="control-label col-sm-2">Мета тег TITLE</label>
-							  <div class="col-sm-10">
+							  <label class="control-label col-sm-3">Мета тег TITLE</label>
+							  <div class="col-sm-9">
 								<input type="text" class="form-control" name="meta_title" id="meta_title" value="{$row['metatitle']}" autocomplete="off" maxlength="190">
 							  </div>
-							 </div>
+							</div>
+							
+							<div class="form-group">
+							  <label class="control-label col-sm-3">Мета тег DESCRIPTION</label>
+							  <div class="col-sm-9">
+								<input type="text" class="form-control" name="descr" id="descr" value="{$row['metadescr']}" autocomplete="off" maxlength="300">
+							  </div>
+							</div>							
 
 							<div class="form-group">
-							  <label class="control-label col-sm-2">Мета тег KEYWORDS</label>
-							  <div class="col-sm-10">
+							  <label class="control-label col-sm-3">Мета тег KEYWORDS</label>
+							  <div class="col-sm-9">
 								<input type="text" class="form-control" name="keywords" id="keywords" value="{$row['keywords']}" autocomplete="off" maxlength="190">
 							  </div>
 							 </div>								 
@@ -1367,6 +1389,16 @@ function imagedelete( value ) {
 	$('#current_tags, #search_current_tags').tokenfield({
 	  autocomplete: {
 	    source: '/engine/ajax/controller.php?mod=find_tags&user_hash={$dle_login_hash}',
+		minLength: 2,
+		delimiter: ',',
+	    delay: 500
+	  },
+	  createTokensOnBlur:true
+	});
+	
+	$('#current_xfields, #xfields').tokenfield({
+	  autocomplete: {
+	    source: '/engine/ajax/controller.php?mod=find_tags&user_hash={$dle_login_hash}&mode=xfield',
 		minLength: 2,
 		delimiter: ',',
 	    delay: 500
