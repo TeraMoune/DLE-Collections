@@ -20,11 +20,11 @@
  - Быстрый поиск группы новостей по заголовку, тегам или дополнительным полям (Для каждой подборки по тегам или дополнительным полям делает запрос в базу на получение количества новостей в подборке так же не проверял работу кэша с выборкой из тегов и полей)
  - Использование с кастомным выводом новостей
  - Выводить [блок](https://github.com/TeraMoune/Collections-DLE#%D1%81%D0%BA%D1%80%D0%B8%D0%BD%D1%88%D0%BE%D1%82%D1%8B-%D0%B4%D0%BE%D0%BF%D0%BE%D0%BB%D0%BD%D0%B5%D0%BD%D0%B8%D1%8F-%D0%B1%D0%BB%D0%BE%D0%BA%D0%BE%D0%B2-%D0%B2-%D0%BF%D0%BE%D0%BB%D0%BD%D0%BE%D0%B9-%D0%BD%D0%BE%D0%B2%D0%BE%D1%81%D1%82%D0%B8) в полной новости с табами по подборкам со списком новостей, или использовать определённое доп поле новости в котором будет ID подборки для вывода новостей из указанной подборки (Платно 250 рублей)
- - Изменения подборок прямо из полной новости :new:
+ - Изменения подборок прямо из полной новости
 ---
 
 # Шаблоны
-`collections_editnews.tpl` :new:
+`collections_editnews.tpl`
   - {collections} - Выводит выборку подборок при изменении подборок новости.
 
 `addnews.tpl` 
@@ -69,7 +69,7 @@
   - [collections-alllist] text [/collections-alllist] Выводит заключённый в теге текст на странице всех подборок.
   - {c-title} Выводит название подборки \ либо meta-title.
   - {c-descr} Выводит описание подборки.
-  - {c-meta-descr} Выводит meta-description \ либо описание подборки. :new:
+  - {c-meta-descr} Выводит meta-description \ либо описание подборки.
     
 Пример: 
  - `{collections limit="5" days="1"}` - Выведет 5 подборок которые были обновлены сегодня.
@@ -113,10 +113,7 @@ RewriteRule ^collections(/?)$ index.php?do=collections [L]
 ### Donate
 Для материальной благодарности.
 
-<img src="https://qiwi.com/favicon.ico" width="16" height="16"> [Qiwi](https://qiwi.me/teramoune)
-
-<img src="https://www.webmoney.ru/img/logo-wm-sat-small.png" width="139" height="34">
-
+ - [Qiwi](https://qiwi.me/teramoune)
  - Z990082286464
  - 4100115063692304 (yandex)
  
