@@ -96,18 +96,18 @@ RewriteRule ^collections(/?)$ index.php?do=collections [L]
 # Скриншоты
 
 <p>
-<img src="https://user-images.githubusercontent.com/44625352/55650636-9ecf6f80-57e6-11e9-86e1-cff1eec8b3fa.png" width="430">
-<img src="https://user-images.githubusercontent.com/44625352/62590580-875bdc80-b8d5-11e9-8cb8-8a4fc97777b3.jpg" width="430">
-<img src="https://user-images.githubusercontent.com/44625352/55650754-e0f8b100-57e6-11e9-92fa-8d9d176dbb2f.png" width="430">
-<img src="https://user-images.githubusercontent.com/44625352/55650753-e0601a80-57e6-11e9-981f-2877fb2cadf8.png" width="430">
-<img src="https://user-images.githubusercontent.com/44625352/55650756-e0f8b100-57e6-11e9-9a94-12bf6a018785.png" width="430">
-<img src="https://user-images.githubusercontent.com/44625352/55650574-6039b500-57e6-11e9-83e6-daaff65c6129.png" width="430">
+<img src="https://user-images.githubusercontent.com/44625352/55650636-9ecf6f80-57e6-11e9-86e1-cff1eec8b3fa.png" width="420">
+<img src="https://user-images.githubusercontent.com/44625352/62590580-875bdc80-b8d5-11e9-8cb8-8a4fc97777b3.jpg" width="420">
+<img src="https://user-images.githubusercontent.com/44625352/55650754-e0f8b100-57e6-11e9-92fa-8d9d176dbb2f.png" width="420">
+<img src="https://user-images.githubusercontent.com/44625352/55650753-e0601a80-57e6-11e9-981f-2877fb2cadf8.png" width="420">
+<img src="https://user-images.githubusercontent.com/44625352/55650756-e0f8b100-57e6-11e9-9a94-12bf6a018785.png" width="420">
+<img src="https://user-images.githubusercontent.com/44625352/55650574-6039b500-57e6-11e9-83e6-daaff65c6129.png" width="420">
 </p>
 
 # Скриншоты дополнения блоков в полной новости
 <p>
-<img src="https://user-images.githubusercontent.com/44625352/62590379-ce959d80-b8d4-11e9-9d15-fcaec7633050.jpg" width="430">
-<img src="https://user-images.githubusercontent.com/44625352/62590380-ce959d80-b8d4-11e9-8e8e-05e271592bcc.jpg" width="430">
+<img src="https://user-images.githubusercontent.com/44625352/62590379-ce959d80-b8d4-11e9-9d15-fcaec7633050.jpg" width="420">
+<img src="https://user-images.githubusercontent.com/44625352/62590380-ce959d80-b8d4-11e9-8e8e-05e271592bcc.jpg" width="420">
 </p>
 
 ### Donate
