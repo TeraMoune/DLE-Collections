@@ -155,6 +155,11 @@ if( !defined( 'DATALIFEENGINE' ) OR !defined( 'LOGGED_IN' ) ) {
 		$output .= "</select>";
 		return $output;
 	}
+	
+	function installationRadio($id, $options){
+		$source = str_replace('value="'.$id.'"', 'value="'.$id.'" checked', $options);
+		return $source;
+	}	
 
 if( $action == "settings" ) {
 	
@@ -174,6 +179,11 @@ if( $action == "settings" ) {
     $save_con['collection_news_number'] = intval($save_con['collection_news_number']);	
     $save_con['collection_number'] = intval($save_con['collection_number']);	
     $save_con['collection_disable_index'] = intval($save_con['collection_disable_index']);	
+    $save_con['collections_log'] = intval($save_con['collections_log']);	
+    $save_con['collections_empty_show'] = intval($save_con['collections_empty_show']);	
+    $save_con['collections_extended_info'] = intval($save_con['collections_extended_info']);	
+    $save_con['collections_often_collections'] = intval($save_con['collections_often_collections']);	
+    $save_con['collection_often_news_number'] = intval($save_con['collection_often_news_number']);	
     
 	$params = array();
 	$find = array();
@@ -250,8 +260,8 @@ if( $action == "settings" ) {
     <table class="table table-normal">
 HTML;
 
-	showRow( "Количество новостей на страницу подборки", "По умолчанию использует параметр количества новостей", "<input autocomplete=\"off\" class=\"form-control\" type=\"text\" name=\"save_con[collection_news_number]\" value=\"" . ( $config['collection_news_number'] ? $config['collection_news_number'] : $config['news_number']). "\" style=\"width:100%;max-width:100px;float:right\">" );
-	showRow( "Количество подборок на страницу", "По умолчанию использует параметр количества новостей", "<input autocomplete=\"off\" class=\"form-control\" type=\"text\" name=\"save_con[collection_number]\" value=\"" . ( $config['collection_number'] ? $config['collection_number'] : $config['news_number'] ). "\" style=\"width:100%;max-width:100px;float:right\">" );
+	showRow( "Количество новостей на страницу подборки", "По умолчанию использует параметр количества новостей", "<input autocomplete=\"off\" class=\"form-control\" type=\"number\" name=\"save_con[collection_news_number]\" value=\"" . ( $config['collection_news_number'] ? $config['collection_news_number'] : $config['news_number']). "\" style=\"width:100%;max-width:100px;float:right\">" );
+	showRow( "Количество подборок на страницу", "По умолчанию использует параметр количества новостей", "<input autocomplete=\"off\" class=\"form-control\" type=\"number\" name=\"save_con[collection_number]\" value=\"" . ( $config['collection_number'] ? $config['collection_number'] : $config['news_number'] ). "\" style=\"width:100%;max-width:100px;float:right\">" );
 	showRow( "Разделитель подборок на странице новости", "По умолчанию - запятая", "<input autocomplete=\"off\" class=\"form-control\" type=\"text\" name=\"save_con[collection_separator]\" value=\"" . ( $config['collection_separator'] ? $config['collection_separator'] : ',' ) . "\" style=\"width:100%;max-width:50px;float:right\">" );
 	showRow( $lang['opt_sys_msort'], $lang['opt_sys_msortd']."<br>По умолчанию: {$config['news_msort']}", "<div style=\"float:right\">" . makeDropDown( array ("DESC" => $lang['opt_sys_mminus'], "ASC" => $lang['opt_sys_mplus'] ), "save_con[collections_news_msort]", ( $config['collections_news_msort'] ? $config['collections_news_msort'] : $config['news_msort'] ) ) . "</div>" );
 	showRow( $lang['opt_sys_sort'], $lang['opt_sys_sortd']."<br>По умолчанию: {$config['news_sort']}", "<div style=\"float:right\">" . makeDropDown( array ("date" => $lang['opt_sys_sdate'], "rating" => $lang['opt_sys_srate'], "news_read" => $lang['opt_sys_sview'], "title" => $lang['opt_sys_salph'] ), "save_con[collections_news_sort]", ( $config['collections_news_sort'] ? $config['collections_news_sort'] : $config['news_sort'] ) ) . "</div>" );
@@ -260,6 +270,9 @@ HTML;
 	showRow( $lang['opt_sys_an'], "<a onclick=\"javascript:Help('date'); return false;\" href=\"#\">$lang[opt_sys_and]</a>", "<div style=\"float:right\"><input  type=\"text\" class=\"form-control\" style=\"max-width:150px; text-align: center;\" name=\"save_con[collection_timestamp_active]\" value=\"".( $config['collection_timestamp_active'] ? $config['collection_timestamp_active'] : $config['timestamp_active'] )."\"></div>" );
 	showRow( "Логи действий в админ панели", "", "<div style=\"float:right\">" . makeCheckBox( "save_con[collections_log]", "{$config['collections_log']}" ) . "</div>" );
 	showRow( "Выводить пустые подборки на сайте", "", "<div style=\"float:right\">" . makeCheckBox( "save_con[collections_empty_show]", "{$config['collections_empty_show']}" ) . "</div>" );
+	showRow( "Заполнять дополнительную информацию ?", "Если включено то будет записывать сумму таких значений как количество просмотров новости, комментариев, рейтинг и количество голосов.<br>Для дополнительной выводимой информации, а так же для тега {collections-custom} в котором задаются параметры критерия сортировки.", "<div style=\"float:right\">" . makeCheckBox( "save_con[collections_extended_info]", "{$config['collections_extended_info']}" ) . "</div>" );
+	showRow( "Часто встречающиеся подборки", "Если включено то будет возможно вывести частые подборки среди всех новостей в текущей подборке.", "<div style=\"float:right\">" . makeCheckBox( "save_con[collections_often_collections]", "{$config['collections_often_collections']}" ) . "</div>" );
+	showRow( "Настройки часто встречающихся подборок", "По умолчанию<br><br>Лимит: 3<br>Повторений не менее: 3", "<div style=\"width:100%;max-width:200px;float:right;\"><div style=\"margin-bottom:10px\"><label for=\"often_limit\" style=\"line-height: 22px;\">Лимит:</label> <input id=\"often_limit\" autocomplete=\"off\" class=\"form-control\" type=\"number\" name=\"save_con[collections_often_limit]\" value=\"" . ( $config['collections_often_limit'] ? $config['collections_often_limit'] : 3 ) . "\" style=\"width:100%;max-width:50px;text-align:center;float: right;\"></div><div><label for=\"min_often\" style=\"line-height: 22px;\">Повторений не менее:</label> <input id=\"min_often\" autocomplete=\"off\" class=\"form-control\" type=\"number\" name=\"save_con[collections_min_often]\" value=\"" . ( $config['collections_min_often'] ? $config['collections_min_often'] : 3 ) . "\" style=\"width:100%;max-width:50px;text-align:center;float: right;\"></div></div>" );
 	
     echo <<<HTML
 	</table>
@@ -400,13 +413,16 @@ HTML;
 	
 	$current_xfields = htmlspecialchars ( strip_tags ( stripslashes ( trim ( $_POST['current_xfields'] ) ) ), ENT_COMPAT, $config['charset'] );
 
+	$xfields_s 	= isset($_POST['xfields_s']) 	? $_POST['xfields_s'] 	: 'AND';
+	$tags_s 	= isset($_POST['tags_s']) 		? $_POST['tags_s'] 		: 'AND';	
+	
 	if( $news_ids ) {
 		
 		$news_ids = explode(', ', $news_ids);
 		$num_elem = count($news_ids);
 		$news_ids = implode(',',$news_ids);
 		
-	} else 	$num_elem = 0;	
+	} else $num_elem = 0;	
 	
 	if ( $config['allow_admin_wysiwyg'] ) $parse->allow_code = false;
 	
@@ -455,9 +471,7 @@ HTML;
 	
 	$name = $db->safesql( $name );
 	$alt_url = $db->safesql( $alt_url );
-	
 	$metatags = create_metatags( $descr );
-	
 	$added_time = time();
 	$thistime = date( "Y-m-d H:i:s", $added_time );
 	
@@ -470,7 +484,7 @@ HTML;
 		msg( "error", array('javascript:history.go(-1)' => "Добавление новой подборки на сайт", '' => $lang['addnews_error'] ), "Слишком длинное имя.", "javascript:history.go(-1)" );
 	}
 		
-	$db->query( "INSERT INTO " . PREFIX . "_news_collections (user_name, name, alt_url, descr, date, create_date, cover, news_ids, current_tags, current_xfields, num_elem, keywords, metatitle, metadescr) values ('".$db->safesql($member_id['name'])."', '{$name}', '{$alt_url}', '{$descr}', '{$thistime}', '{$thistime}', '{$poster}', '{$news_ids}', '{$current_tags}', '{$current_xfields}', '{$num_elem}', '{$metatags['keywords']}', '{$metatags['title']}', '{$metatags['description']}')" );
+	$db->query( "INSERT INTO " . PREFIX . "_news_collections (user_name, name, alt_url, descr, date, create_date, cover, news_ids, current_tags, current_xfields, num_elem, keywords, metatitle, metadescr, xfields_s, tags_s) values ('".$db->safesql($member_id['name'])."', '{$name}', '{$alt_url}', '{$descr}', '{$thistime}', '{$thistime}', '{$poster}', '{$news_ids}', '{$current_tags}', '{$current_xfields}', '{$num_elem}', '{$metatags['keywords']}', '{$metatags['title']}', '{$metatags['description']}', '{$xfields_s}', '{$tags_s}')" );
 
 	$id = $db->insert_id();
 	
@@ -478,7 +492,7 @@ HTML;
 	
 	if( $news_ids ) {
 		
-		$news_ids = explode(',' ,$news_ids);
+		$news_ids = explode(',', $news_ids);
 		
 		foreach( $news_ids as $val ) {
 			
@@ -488,10 +502,10 @@ HTML;
 			
 			if( $row['collections'] ) {
 				
-				$row['collections'] = explode(',', $row['collections']);
-				$row['collections'][] = $id;
-				$row['collections'] = array_unique($row['collections']);
-				$new_collections = implode(',', $row['collections']);
+				$row['collections'] 	= explode(',', $row['collections']);
+				$row['collections'][] 	= $id;
+				$row['collections'] 	= array_unique($row['collections']);
+				$new_collections 		= implode(',', $row['collections']);
 				
 			} else $new_collections = $id;
 			
@@ -516,7 +530,7 @@ HTML;
 
 	
 	@unlink( ENGINE_DIR . '/cache/system/collections.php' );
-	msg( "success", "Подборка добавлена", "Подборка" . " \"" . stripslashes( stripslashes( $name ) ) . "\" " . $lang['addnews_ok_2'] . $count_news, array('?mod=news_collections&action=list' => 'Назад к списку' ) );
+	msg( "success", "Подборка добавлена", "Подборка" . " \"" . stripslashes( $name ) . "\" " . $lang['addnews_ok_2'] . $count_news, array('?mod=news_collections&action=list' => 'Назад к списку' ) );
 
 	}
 	
@@ -526,10 +540,10 @@ HTML;
 	$user_group[$member_id['user_group']]['allow_file_upload'] = false;
 	
 	if( $config['allow_admin_wysiwyg'] == 1 ) {
-		$js_array[] = "engine/skins/codemirror/js/code.js";
-		$js_array[] = "engine/editor/jscripts/froala/editor.js";
-		$js_array[] = "engine/editor/jscripts/froala/languages/{$lang['wysiwyg_language']}.js";
-		$css_array[] = "engine/editor/jscripts/froala/css/editor.css";
+		$js_array[] 	= "engine/skins/codemirror/js/code.js";
+		$js_array[] 	= "engine/editor/jscripts/froala/editor.js";
+		$js_array[] 	= "engine/editor/jscripts/froala/languages/{$lang['wysiwyg_language']}.js";
+		$css_array[] 	= "engine/editor/jscripts/froala/css/editor.css";
 	}
 
 	if( $config['allow_admin_wysiwyg'] == 2 ) {
@@ -602,13 +616,29 @@ HTML;
           <label>Новости</label>
 		  <input id="news_ids" name="news_ids" type="text" class="form-control" autocomplete="off">
         </div>
-		<div class="col-sm-12">
-          <label>Теги</label>
-		  <input id="current_tags" name="current_tags" type="text" class="form-control" autocomplete="off">
+		<div class="col-sm-12" style="margin-bottom: 10px;">
+			<label>Теги</label>
+			<input id="current_tags" name="current_tags" type="text" class="form-control" autocomplete="off">
+			<div>
+				<div class="col-sm-4">
+					<label class="radio-inline"><input class="icheck" type="radio" name="tags_s" value="OR">Значения могут быть по отдельности</label>
+				</div>
+				<div class="col-sm-5">
+					<label class="radio-inline"><input class="icheck" type="radio" name="tags_s" value="AND">Строгое наличие перечисленных значений</label>
+				</div>
+			</div>		  
         </div>
-		<div class="col-sm-12">
-          <label>Дополнительные поля</label>
-		  <input id="current_xfields" name="current_xfields" type="text" class="form-control" autocomplete="off">
+		<div class="col-sm-12" style="margin-bottom: 10px;">
+			<label>Дополнительные поля</label>
+			<input id="current_xfields" name="current_xfields" type="text" class="form-control" autocomplete="off">
+			<div>
+				<div class="col-sm-4">
+					<label class="radio-inline"><input class="icheck" type="radio" name="xfields_s" value="OR">Значения могут быть по отдельности</label>
+				</div>
+				<div class="col-sm-5">
+					<label class="radio-inline"><input class="icheck" type="radio" name="xfields_s" value="AND">Строгое наличие перечисленных значений</label>
+				</div>
+			</div>
         </div>		
         <div class="col-sm-6">
           <label>Мета тег TITLE</label>
@@ -692,24 +722,26 @@ HTML;
 		
 		if( $val['current_xfields'] ) {
 
-			$val['current_xfields'] = explode('||',$val['current_xfields']);
+			$val['current_xfields'] = explode(', ',$val['current_xfields']);
 			
 			$like_arr = array();
 			foreach( $val['current_xfields'] as $val2 ) {
-				$val2 = @$db->safesql( $val2 );
+				
+				$val2 		= @$db->safesql( $val2 );
 				$like_arr[] = "xfields like '%{$val2}%'";
+				
 			}
 			
-			$where_count[] = implode(' AND ', $like_arr);
+			if( $val['xfields_s'] == 'AND' ) $where_count[] = implode(' AND ', $like_arr);
+			else $where_count[] = implode(' OR ', $like_arr);
 			
 		}
 		
 		if( count($where_count) ) {
 
-			$where_count = implode(' AND ', $where_count);
-			$sql_count = $db->super_query("SELECT COUNT(*) as count FROM " . PREFIX . "_post WHERE " . $where_count);
-			
-			$val['num_elem'] = $sql_count['count'];		
+			$where_count 		= implode(' AND ', $where_count);
+			$sql_count 			= $db->super_query("SELECT COUNT(*) as count FROM " . PREFIX . "_post WHERE " . $where_count);
+			$val['num_elem'] 	= $sql_count['count'];		
 			
 		}
 		
@@ -821,7 +853,7 @@ function checkxf ()	{
 		allowdrop: false,
 		encoding: 'multipart',
         sizeLimit: 0,
-		allowedExtensions: ['jpg', 'jpeg', 'png'],
+		allowedExtensions: ['jpg', 'jpeg', 'png', 'webp'],
 	    params: {"user_hash" : "{$dle_login_hash}", "id" : "0"},
         template: '<div class="qq-uploader">' + 
                 '<div id="uploadedfile_poster" class="clrfix"></div>' +
@@ -885,191 +917,186 @@ HTML;
 	
 	if( $_REQUEST['is'] == "save" ) {
 		
-	if( $_REQUEST['user_hash'] == "" or $_REQUEST['user_hash'] != $dle_login_hash ) {
-		
-		msg( "error", array('javascript:history.go(-1)' => "Изменение подборки", '' => $lang['addnews_error'] ), $lang['sess_error'], "javascript:history.go(-1)" );
-	
-	}
-	
-	$id = intval( $_GET['id'] );
-	
-	$row = $db->super_query( "SELECT * FROM " . PREFIX . "_news_collections WHERE id = '{$id}'" );
-	
-	if( !$row  ) {
-		
-		msg( "error", array('javascript:history.go(-1)' => "Изменение подборки", '' => $lang['addnews_error'] ), "Подборки не найдено.", "javascript:history.go(-1)" );
+		if( $_REQUEST['user_hash'] == "" or $_REQUEST['user_hash'] != $dle_login_hash ) {
 			
-	}
-	
-	if( !is_dir( ENGINE_DIR . "/cache/system/collections_title/" ) ) {
-			
-		@mkdir( ENGINE_DIR . "/cache/system/collections_title/", 0777 );
-		@chmod( ENGINE_DIR . "/cache/system/collections_title/", 0777 );
-
-	}	
-	
-	@header('X-XSS-Protection: 0;');
-
-	include_once (DLEPlugins::Check(ENGINE_DIR . '/classes/parse.class.php'));
-	
-	$parse = new ParseFilter();	
-	
-	$name = $parse->process(  trim( strip_tags ($_POST['name']) ) );
-	$news_ids = $_POST['news_ids'] ? $parse->process( $_POST['news_ids'] ) : '';
-	
-	$current_tags = rawurldecode( $_POST['current_tags'] );
-	$current_tags = htmlspecialchars ( strip_tags ( stripslashes ( trim ( $current_tags ) ) ), ENT_COMPAT, $config['charset'] );
-	$current_tags = $current_tags ? @$db->safesql( $current_tags ) : '';
-	
-	$current_xfields = htmlspecialchars ( strip_tags ( stripslashes ( trim ( $_POST['current_xfields'] ) ) ), ENT_COMPAT, $config['charset'] );
-	
-	
-	if( $news_ids ) {
+			msg( "error", array('javascript:history.go(-1)' => "Изменение подборки", '' => $lang['addnews_error'] ), $lang['sess_error'], "javascript:history.go(-1)" );
 		
-		$news_ids = explode(', ', $news_ids);
-		$num_elem = count($news_ids);
-		$news_ids = implode(',',$news_ids);
-		
-		
-		if( $news_ids != $row['news_ids'] ) {
-			
-			$news_ids_t = explode(',', $news_ids);
-			$post = $db->super_query( "SELECT id, title FROM " . PREFIX . "_post WHERE id regexp '[[:<:]](" . implode('|', $news_ids_t) . ")[[:>:]]'", true );
-			$title_p = array();
-			foreach( $post as $val ){
-				
-				$title_p[$val['id']] = $val['title'];
-				
-			}
-			set_vars ( "collections_title_" . $row['id'], $title_p, "/cache/system/collections_title/" );
 		}
 		
-	} else $num_elem = 0;
-	
-	if ( $config['allow_admin_wysiwyg'] ) $parse->allow_code = false;
-	
-	$descr = $parse->process( $_POST['short_story'] );
-	
-	if( $config['allow_admin_wysiwyg'] OR $allow_br != '1' ) $descr = $db->safesql( $parse->BB_Parse( $descr ) );
-	else $descr = $db->safesql( $parse->BB_Parse( $descr, false ) );
-
-	if( $parse->not_allowed_text ) {
-		msg( "error", array('javascript:history.go(-1)' => "Добавление новой подборки на сайт", '' => $lang['addnews_error'] ), "Ваше описание или имя содержит недопустимый текст.", "javascript:history.go(-1)" );
-	}
-	
-	$alt_url = $parse->process(  trim( strip_tags ($_POST['alt_url']) ) );
-	$poster = trim($_POST['poster']);
-	
-	if( $poster ) {
-
-		$url_image = explode( "/", $poster );
-				
-		if( count( $url_image ) == 2 ) {
-					
-			$folder_prefix = $url_image[0] . "/";
-			$image = $url_image[1];
-				
-		} else {
-					
-			$folder_prefix = "";
-			$image = $url_image[0];
-			
-		}
-
-		$image = totranslit($image);	
-		$poster = $folder_prefix . $image;
-	} else $poster = '';
-	
-	if(!$alt_url) $alt_url = totranslit( stripslashes( $name ), true, false );
-	else $alt_url = totranslit( stripslashes( $alt_url ), true, false );
-	
-	if( dle_strlen( $alt_url, $config['charset'] ) > 190 ) {
-		$alt_url = dle_substr( $alt_url, 0, 190, $config['charset'] );
-	}
-	
-	$name = $db->safesql( $name );
-	$alt_url = $db->safesql( $alt_url );
-	
-	$metatags = create_metatags( $descr );
-	
-	$added_time = time();
-	$thistime = date( "Y-m-d H:i:s", $added_time );
-	
-	if( !$name ) {
-		msg( "error", array('javascript:history.go(-1)' => "Сохранение подборки", '' => $lang['addnews_error'] ), "Имя является обязательным при сохранении подборки.", "javascript:history.go(-1)" );
+		$id = intval( $_GET['id'] );
 		
-	}
-
-	if( dle_strlen( $name, $config['charset'] ) > 190 ) {
-		msg( "error", array('javascript:history.go(-1)' => "Сохранение подборки", '' => $lang['addnews_error'] ), "Слишком длинное имя.", "javascript:history.go(-1)" );
-	}
-	
-	if( $config['collections_log'] ) $db->query( "INSERT INTO " . USERPREFIX . "_admin_logs (name, date, ip, action, extras) values ('".$db->safesql($member_id['name'])."', '{$_TIME}', '{$_IP}', '48', 'Изменение подборки: <a href=\"{$config['http_home_url']}{$config['admin_path']}?mod=news_collections&action=edit&id={$id}\">" . $db->safesql($name) . "</a>')" );
+		$row = $db->super_query( "SELECT * FROM " . PREFIX . "_news_collections WHERE id = '{$id}'" );
 		
-	$db->query("UPDATE ".PREFIX."_news_collections SET name = '{$name}', alt_url = '{$alt_url}', descr = '{$descr}', news_ids = '{$news_ids}', current_tags = '{$current_tags}', current_xfields = '{$current_xfields}', num_elem = '{$num_elem}', metatitle = '{$metatags['title']}', metadescr = '{$metatags['description']}', keywords = '{$metatags['keywords']}', cover = '{$poster}', date = '{$thistime}' WHERE id = '{$id}'");	
-
-	if( $news_ids != $row['news_ids'] ) {
-		
-		$news_ids = explode(',' ,$news_ids);
-		
-		$add_collections = array_diff ($news_ids, explode(',',$row['news_ids']));
-		$remove_collections = $row['news_ids'] ? array_diff (explode(',',$row['news_ids']), $news_ids) : 0;
-	
-		if( count($add_collections) ) {
+		if( !$row  ) {
 			
-		foreach( $add_collections as $val ) {
-			
-			$val = intval($val);
-			
-			$row2 = $db->super_query("SELECT collections FROM ".PREFIX."_post WHERE id = '{$val}'");
-			
-			if( $row2['collections'] ) {
+			msg( "error", array('javascript:history.go(-1)' => "Изменение подборки", '' => $lang['addnews_error'] ), "Подборки не найдено.", "javascript:history.go(-1)" );
 				
-				$row2['collections'] = explode(',', $row2['collections']);
-				$row2['collections'][] = $row['id'];
-				$row2['collections'] = array_unique($row2['collections']);
-				$new_collections = implode(',', $row2['collections']);
-				
-			} else $new_collections = $row['id'];
-			
-			$db->query("UPDATE ".PREFIX."_post SET collections = '{$new_collections}' WHERE id = '{$val}'");
-
-		}			
-			
 		}
 		
-		if( is_array($remove_collections) AND count($remove_collections) ) {
-	
-		foreach( $remove_collections as $val ) {
-			
-			$val = intval($val);
-			
-			$row2 = $db->super_query("SELECT collections FROM ".PREFIX."_post WHERE id = '{$val}'");
-			
-			$list = explode( ",", $row2['collections'] );
-			$i = 0;
-	
-			foreach ( $list as $cid ) {
-
-				if( $cid == $id ) unset( $list[$i] );
-				$i ++;
-
-			}
-	
-			if( count( $list ) ) $new_collections = implode( ",", $list );
-			else $new_collections = "";
-			
-			$db->query("UPDATE ".PREFIX."_post SET collections = '{$new_collections}' WHERE id = '{$val}'");
-
-		}			
+		if( !is_dir( ENGINE_DIR . "/cache/system/collections_title/" ) ) {
+				
+			@mkdir( ENGINE_DIR . "/cache/system/collections_title/", 0777 );
+			@chmod( ENGINE_DIR . "/cache/system/collections_title/", 0777 );
 
 		}	
 		
-	}
-	
-	@unlink( ENGINE_DIR . '/cache/system/collections.php' );
-	clear_cache( array('collections_news_', 'cblock_list_') );
-	msg( "success", "Подборка изменена", "Подборка" . " \"" . stripslashes( stripslashes( $name ) ) . "\" " . "изменена ", array('?mod=news_collections&action=list' => 'Назад к списку' ) );
+		@header('X-XSS-Protection: 0;');
+
+		include_once (DLEPlugins::Check(ENGINE_DIR . '/classes/parse.class.php'));
+		
+		$parse 				= new ParseFilter();	
+		$name 				= $parse->process(  trim( strip_tags ($_POST['name']) ) );
+		$news_ids 			= $_POST['news_ids'] ? $parse->process( $_POST['news_ids'] ) : '';
+		$current_tags 		= rawurldecode( $_POST['current_tags'] );
+		$current_tags 		= htmlspecialchars ( strip_tags ( stripslashes ( trim ( $current_tags ) ) ), ENT_COMPAT, $config['charset'] );
+		$current_tags 		= $current_tags ? @$db->safesql( $current_tags ) : '';
+		$current_xfields 	= htmlspecialchars ( strip_tags ( stripslashes ( trim ( $_POST['current_xfields'] ) ) ), ENT_COMPAT, $config['charset'] );
+		$xfields_s 			= isset($_POST['xfields_s']) ? $_POST['xfields_s'] : 'AND';
+		$tags_s 			= isset($_POST['tags_s']) ? $_POST['tags_s'] : 'AND';	
+		
+		if( $news_ids ) {
+			
+			$news_ids = explode(', ', $news_ids);
+			$num_elem = count($news_ids);
+			$news_ids = implode(',',$news_ids);
+			
+			
+			if( $news_ids != $row['news_ids'] ) {
+				
+				$news_ids_t = explode(',', $news_ids);
+				$post 		= $db->super_query( "SELECT id, title FROM " . PREFIX . "_post WHERE id regexp '[[:<:]](" . implode('|', $news_ids_t) . ")[[:>:]]'", true );
+				$title_p 	= array();
+				
+				foreach( $post as $val ){
+					
+					$title_p[$val['id']] = $val['title'];
+					
+				}
+				
+				set_vars ( "collections_title_" . $row['id'], $title_p, "/cache/system/collections_title/" );
+				
+			}
+			
+		} else $num_elem = 0;
+		
+		if ( $config['allow_admin_wysiwyg'] ) $parse->allow_code = false;
+		
+		$descr = $parse->process( $_POST['short_story'] );
+		
+		if( $config['allow_admin_wysiwyg'] OR $allow_br != '1' ) $descr = $db->safesql( $parse->BB_Parse( $descr ) );
+		else $descr = $db->safesql( $parse->BB_Parse( $descr, false ) );
+
+		if( $parse->not_allowed_text ) {
+			msg( "error", array('javascript:history.go(-1)' => "Добавление новой подборки на сайт", '' => $lang['addnews_error'] ), "Ваше описание или имя содержит недопустимый текст.", "javascript:history.go(-1)" );
+		}
+		
+		$alt_url = $parse->process(  trim( strip_tags ($_POST['alt_url']) ) );
+		$poster = trim($_POST['poster']);
+		
+		if( $poster ) {
+
+			$url_image = explode( "/", $poster );
+					
+			if( count( $url_image ) == 2 ) {
+						
+				$folder_prefix = $url_image[0] . "/";
+				$image = $url_image[1];
+					
+			} else {
+						
+				$folder_prefix = "";
+				$image = $url_image[0];
+				
+			}
+
+			$image = totranslit($image);	
+			$poster = $folder_prefix . $image;
+			
+		} else $poster = '';
+		
+		if(!$alt_url) $alt_url = totranslit( stripslashes( $name ), true, false );
+		else $alt_url = totranslit( stripslashes( $alt_url ), true, false );
+		
+		if( dle_strlen( $alt_url, $config['charset'] ) > 190 ) {
+			$alt_url = dle_substr( $alt_url, 0, 190, $config['charset'] );
+		}
+		
+		$name 		= $db->safesql( $name );
+		$alt_url 	= $db->safesql( $alt_url );
+		$metatags 	= create_metatags( $descr );
+		$added_time = time();
+		$thistime 	= date( "Y-m-d H:i:s", $added_time );
+		
+		if( !$name ) {
+			msg( "error", array('javascript:history.go(-1)' => "Сохранение подборки", '' => $lang['addnews_error'] ), "Имя является обязательным при сохранении подборки.", "javascript:history.go(-1)" );
+		}
+
+		if( dle_strlen( $name, $config['charset'] ) > 190 ) {
+			msg( "error", array('javascript:history.go(-1)' => "Сохранение подборки", '' => $lang['addnews_error'] ), "Слишком длинное имя.", "javascript:history.go(-1)" );
+		}
+		
+		if( $config['collections_log'] ) $db->query( "INSERT INTO " . USERPREFIX . "_admin_logs (name, date, ip, action, extras) values ('".$db->safesql($member_id['name'])."', '{$_TIME}', '{$_IP}', '48', 'Изменение подборки: <a href=\"{$config['http_home_url']}{$config['admin_path']}?mod=news_collections&action=edit&id={$id}\">" . $db->safesql($name) . "</a>')" );
+			
+		$db->query("UPDATE ".PREFIX."_news_collections SET name = '{$name}', alt_url = '{$alt_url}', descr = '{$descr}', news_ids = '{$news_ids}', current_tags = '{$current_tags}', current_xfields = '{$current_xfields}', num_elem = '{$num_elem}', metatitle = '{$metatags['title']}', metadescr = '{$metatags['description']}', keywords = '{$metatags['keywords']}', cover = '{$poster}', date = '{$thistime}' WHERE id = '{$id}'");	
+
+		if( $news_ids != $row['news_ids'] ) {
+			
+			$news_ids 			= explode(',' ,$news_ids);
+			$add_collections 	= array_diff ($news_ids, explode(',',$row['news_ids']));
+			$remove_collections = $row['news_ids'] ? array_diff (explode(',',$row['news_ids']), $news_ids) : 0;
+		
+			if( count($add_collections) ) {
+				
+				foreach( $add_collections as $val ) {
+					
+					$val 	= intval($val);
+					$row2 	= $db->super_query("SELECT collections FROM ".PREFIX."_post WHERE id = '{$val}'");
+					
+					if( $row2['collections'] ) {
+						
+						$row2['collections'] 	= explode(',', $row2['collections']);
+						$row2['collections'][] 	= $row['id'];
+						$row2['collections'] 	= array_unique($row2['collections']);
+						$new_collections 		= implode(',', $row2['collections']);
+						
+					} else $new_collections = $row['id'];
+					
+					$db->query("UPDATE ".PREFIX."_post SET collections = '{$new_collections}' WHERE id = '{$val}'");
+
+				}			
+				
+			}
+			
+			if( is_array($remove_collections) AND count($remove_collections) ) {
+		
+				foreach( $remove_collections as $val ) {
+					
+					$val 	= intval($val);
+					$row2 	= $db->super_query("SELECT collections FROM ".PREFIX."_post WHERE id = '{$val}'");
+					$list 	= explode( ",", $row2['collections'] );
+					$i 		= 0;
+			
+					foreach ( $list as $cid ) {
+
+						if( $cid == $id ) unset( $list[$i] );
+						$i ++;
+
+					}
+			
+					if( count( $list ) ) $new_collections = implode( ",", $list );
+					else $new_collections = "";
+					
+					$db->query("UPDATE ".PREFIX."_post SET collections = '{$new_collections}' WHERE id = '{$val}'");
+
+				}			
+
+			}	
+			
+		}
+		
+		@unlink( ENGINE_DIR . '/cache/system/collections.php' );
+		clear_cache( array('collections_news_', 'cblock_list_') );
+		msg( "success", "Подборка изменена", "Подборка" . " \"" . stripslashes( $name ) . "\" " . "изменена ", array('?mod=news_collections&action=list' => 'Назад к списку' ) );
 
 	}
 
@@ -1077,34 +1104,28 @@ HTML;
 	
 	include_once (DLEPlugins::Check(ENGINE_DIR . '/classes/parse.class.php'));
 
-	$parse = new ParseFilter();
-	
-	$id = intval( $_GET['id'] );
-
-	$row = $db->super_query( "SELECT * FROM " . PREFIX . "_news_collections WHERE id = '$id'" );
-
-	$found = FALSE;
+	$parse 	= new ParseFilter();
+	$id 	= intval( $_GET['id'] );
+	$row 	= $db->super_query( "SELECT * FROM " . PREFIX . "_news_collections WHERE id = '$id'" );
+	$found 	= FALSE;
 
 	if( $id == $row['id'] ) $found = TRUE;
 	if( !$found ) {
 		msg( "error", $lang['cat_error'], "- Не найдена подборка -" );
 	}
 	
+	if( $config['allow_admin_wysiwyg'] ) $row['descr'] = $parse->decodeBBCodes( $row['descr'], true, $config['allow_admin_wysiwyg'] );
+	else $row['descr'] = $parse->decodeBBCodes( $row['descr'], false );
+
+	$row['name'] 		= $parse->decodeBBCodes( $row['name'], false );
+	$row['keywords'] 	= $parse->decodeBBCodes( $row['keywords'], false );
+	$row['metatitle'] 	= stripslashes( $row['metatitle'] );
+
+	$insert_news_ids 	= array();
 	
-	$row['name'] = $parse->decodeBBCodes( $row['name'], false );
-	if( $config['allow_admin_wysiwyg'] ) {
-		$row['descr'] = $parse->decodeBBCodes( $row['descr'], true, $config['allow_admin_wysiwyg'] );
-	} else {
-		$row['descr'] = $parse->decodeBBCodes( $row['descr'], false );
-	}
-	$row['keywords'] = $parse->decodeBBCodes( $row['keywords'], false );
-	$row['metatitle'] = stripslashes( $row['metatitle'] );
+	$tmp_news_ids 		= get_vars ( "collections_title_" . $row['id'], "/cache/system/collections_title/" );
 	
-	$insert_news_ids = array();
-	
-	$tmp_news_ids = get_vars ( "collections_title_" . $row['id'], "/cache/system/collections_title/" );
-	
-	if(!is_array( $tmp_news_ids )){
+	if( !is_array( $tmp_news_ids ) ) {
 		
 		if( !is_dir( ENGINE_DIR . "/cache/system/collections_title/" ) ) {
 			
@@ -1117,6 +1138,7 @@ HTML;
 		
 		$post = $db->super_query( "SELECT id, title FROM " . PREFIX . "_post WHERE id regexp '[[:<:]](" . implode('|', $tmp_news_ids) . ")[[:>:]]'", true );
 		$tmp_news_ids = array();
+		
 		foreach( $post as $val ) {
 			$tmp_news_ids[$val['id']] = $val['title'];
 		}
@@ -1132,9 +1154,9 @@ HTML;
 		
 	}
 	
-	foreach( $tmp_news_ids as $key => $val ){
-		$val = trim($val);
+	foreach( $tmp_news_ids as $key => $val ) {
 		
+		$val = trim($val);
 		$insert_news_ids[] = '{ value: "'.$key.'", label: "'.$val.'" }';
 
 	}
@@ -1142,15 +1164,16 @@ HTML;
 	$news_ids_input = implode(',', $insert_news_ids);	
 	
 	if( $row['cover'] ) {
+		
 		$path_parts = pathinfo($row['cover']);
 
 		if( file_exists(ROOT_DIR . "/uploads/posts/" .$path_parts['dirname']."/".$path_parts['basename']) ) {
 			$img_url = 	$config['http_home_url'] . "uploads/posts/" . $path_parts['dirname']."/".$path_parts['basename'];
 		}
 				
-		$up_image = "<div class=\"uploadedfile\"><div class=\"info\">{$path_parts['basename']}</div><div class=\"uploadimage\"><img style=\"width:auto;height:auto;max-width:130px;max-height:100px;\" src=\"" . $img_url . "\" /></div><div class=\"info\"><a href=\"#\" onclick=\"imagedelete(\\'".$row['cover']."\\');return false;\">Удалить</a></div></div>";
-		$up_image_del = "<div class=\"uploadedfile no-image\"><div class=\"info\">{$path_parts['basename']}</div><div class=\"uploadimage\"><img style=\"width:auto;height:auto;max-width:130px;max-height:100px;\" src=\"/engine/skins/images/no_image.gif\" /></div></div>";
-		$poster_exist = "display:none;";
+		$up_image 		= "<div class=\"uploadedfile\"><div class=\"info\">{$path_parts['basename']}</div><div class=\"uploadimage\"><img style=\"width:auto;height:auto;max-width:130px;max-height:100px;\" src=\"" . $img_url . "\" /></div><div class=\"info\"><a href=\"#\" onclick=\"imagedelete(\\'".$row['cover']."\\');return false;\">Удалить</a></div></div>";
+		$up_image_del 	= "<div class=\"uploadedfile no-image\"><div class=\"info\">{$path_parts['basename']}</div><div class=\"uploadimage\"><img style=\"width:auto;height:auto;max-width:130px;max-height:100px;\" src=\"/engine/skins/images/no_image.gif\" /></div></div>";
+		$poster_exist 	= "display:none;";
 		
 	} else {
 		
@@ -1160,25 +1183,41 @@ HTML;
 	}
 	
 	if( $config['allow_admin_wysiwyg'] == 1 ) {
-		$js_array[] = "engine/skins/codemirror/js/code.js";
-		$js_array[] = "engine/editor/jscripts/froala/editor.js";
-		$js_array[] = "engine/editor/jscripts/froala/languages/{$lang['wysiwyg_language']}.js";
-		$css_array[] = "engine/editor/jscripts/froala/css/editor.css";
+		
+		$js_array[] 	= "engine/skins/codemirror/js/code.js";
+		$js_array[] 	= "engine/editor/jscripts/froala/editor.js";
+		$js_array[] 	= "engine/editor/jscripts/froala/languages/{$lang['wysiwyg_language']}.js";
+		$css_array[] 	= "engine/editor/jscripts/froala/css/editor.css";
+		
 	}
 	
 	if( $config['allow_admin_wysiwyg'] == 2 ) {
-		$js_array[] = "engine/editor/jscripts/tiny_mce/tinymce.min.js";
+		$js_array[] 	= "engine/editor/jscripts/tiny_mce/tinymce.min.js";
 	}
 	
 	if( !$config['allow_admin_wysiwyg'] ) {
-		$js_array[] = "engine/classes/js/typograf.min.js";
+		$js_array[] 	= "engine/classes/js/typograf.min.js";
 	}
 
-	$js_array[] = "engine/classes/uploads/html5/fileuploader.js";
+	$js_array[] 		= "engine/classes/uploads/html5/fileuploader.js";
 	
 	echoheader( "<i class=\"fa fa-pencil-square-o position-left\"></i><span class=\"text-semibold\">Редактирование подборки</span>", array( $config['admin_path'].'?mod=news_collections&action=list' => $lang['edit_all_title'], '' => "Редактирование подборки" ) );
 	
 	if ( !$user_group[$member_id['user_group']]['allow_html'] ) $config['allow_admin_wysiwyg'] = 0;
+	
+	$tags_s = installationRadio($row['tags_s'], "<div class=\"col-sm-4\">
+									<label class=\"radio-inline\"><input class=\"icheck\" type=\"radio\" name=\"tags_s\" value=\"OR\" checked>Значения могут быть по отдельности</label>
+									</div>
+									<div class=\"col-sm-5\">
+									<label class=\"radio-inline\"><input class=\"icheck\" type=\"radio\" name=\"tags_s\" value=\"AND\">Строгое наличие перечисленных значений</label>
+									</div>");
+									
+	$xfields_s = installationRadio($row['xfields_s'], "<div class=\"col-sm-4\">
+									<label class=\"radio-inline\"><input class=\"icheck\" type=\"radio\" name=\"xfields_s\" value=\"OR\" checked>Значения могут быть по отдельности</label>
+									</div>
+									<div class=\"col-sm-5\">
+									<label class=\"radio-inline\"><input class=\"icheck\" type=\"radio\" name=\"xfields_s\" value=\"AND\">Строгое наличие перечисленных значений</label>
+									</div>");	
 	
 	echo <<<HTML
 <style>
@@ -1286,6 +1325,9 @@ HTML;
 							  <label class="control-label col-sm-2">Теги</label>
 							  <div class="col-sm-10">
 								<input id="current_tags" name="current_tags" type="text" class="form-control" value="{$row['current_tags']}" autocomplete="off">
+								<div>
+									{$tags_s}
+								</div>								
 							  </div>
 							 </div>
 
@@ -1293,6 +1335,9 @@ HTML;
 							  <label class="control-label col-sm-2">Дополнительное поле</label>
 							  <div class="col-sm-10">
 								<input id="current_xfields" name="current_xfields" type="text" class="form-control" value="{$row['current_xfields']}" autocomplete="off">
+								<div>
+									{$xfields_s}
+								</div>							  
 							  </div>
 							 </div>						 
 							 
@@ -1303,7 +1348,7 @@ HTML;
 
 	if( $config['allow_admin_wysiwyg'] ) {
 		
-		$mod = 'collections';
+		$mod 				= 'collections';
 		$row['short_story'] = $row['descr'];
 		include (DLEPlugins::Check(ENGINE_DIR . '/editor/shortnews.php'));
 
@@ -1312,6 +1357,7 @@ HTML;
 		$bb_editor = true;
 		include (DLEPlugins::Check(ENGINE_DIR . '/inc/include/inserttag.php'));
 		echo "<div class=\"editor-panel\"><div class=\"shadow-depth1\">{$bb_code}<textarea class=\"editor\" style=\"width:100%;height:300px;\" onfocus=\"setFieldName(this.name)\" name=\"short_story\" id=\"short_story\" >{$row['descr']}</textarea></div></div>";
+	
 	}
 	
 echo <<<HTML
@@ -1438,7 +1484,7 @@ function imagedelete( value ) {
 		allowdrop: false,
 		encoding: 'multipart',
         sizeLimit: 0,
-		allowedExtensions: ['jpg', 'jpeg', 'png'],
+		allowedExtensions: ['jpg', 'jpeg', 'png', 'webp'],
 	    params: {"user_hash" : "{$dle_login_hash}", "id" : "{$id}"},
         template: '<div class="qq-uploader">' + 
                 '<div id="uploadedfile_poster" class="clrfix">{$up_image}</div>' +
@@ -1530,14 +1576,12 @@ HTML;
 		
 		if( isset( $_POST['poster'] ) ) {
 			
-			$url_image = explode( "/", $_POST['poster'] );
-			
-			$folder_prefix = $url_image[0] . "/";
-			$image = $url_image[1];
-			$image = totranslit($image);
-			
-			$c_id = intval($_POST['c_id']);
-			$c_name = $collections_info[$c_id]['name'];
+			$url_image 		= explode( "/", $_POST['poster'] );
+			$folder_prefix 	= $url_image[0] . "/";
+			$image 			= $url_image[1];
+			$image 			= totranslit($image);
+			$c_id 			= intval($_POST['c_id']);
+			$c_name 		= $collections_info[$c_id]['name'];
 			
 			@unlink( ROOT_DIR . "/uploads/posts/" . $folder_prefix . $image );	
 			if( $config['collections_log'] ) $db->query( "INSERT INTO " . USERPREFIX . "_admin_logs (name, date, ip, action, extras) values ('".$db->safesql($member_id['name'])."', '{$added_time}', '{$_IP}', '37', 'Удаляет файл обложки из колекции <a href=\"{$config['http_home_url']}{$config['admin_path']}?mod=news_collections&action=edit&id={$c_id}\">" . $db->safesql($c_name) . "</a>')" );
@@ -1547,7 +1591,7 @@ HTML;
 		
 	}
 	
-	$allowed_extensions = array ("jpg", "png", "jpeg" );
+	$allowed_extensions = array ("jpg", "png", "jpeg", "webp" );
 	
 	$row = $db->super_query( "SELECT id, name FROM " . PREFIX . "_news_collections WHERE id = '{$id}'" );
 	
@@ -1577,8 +1621,8 @@ HTML;
 		
     }
 
-	$filename_arr = explode( ".", $filename );
-	$type = end( $filename_arr );
+	$filename_arr 	= explode( ".", $filename );
+	$type 			= end( $filename_arr );
 
 	if ( !$type ) {
 		
