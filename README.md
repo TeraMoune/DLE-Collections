@@ -7,6 +7,7 @@
 
 [F.A.Q.](https://github.com/TeraMoune/Collections-DLE/wiki/F.A.Q.)
 
+[Для дискуссии](https://teramoune.info/free/12-collections-news.html)
 ---
  - Открытый код
  - CEO оптимизация
