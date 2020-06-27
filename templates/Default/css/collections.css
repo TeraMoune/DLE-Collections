@@ -48,6 +48,7 @@
 .collections_fav {
 	position: absolute;
     top: 0;
+	left:0;
 }
 
 .collections__title {
@@ -103,12 +104,6 @@
 	text-overflow: ellipsis;
 }
 
-.collections .com-num {
-  background: #00000087;
-  padding: 2px 6px;
-  color: #FFF;
-}
-
 #collections-menu {
 	position: relative;
 	width: 350px;
@@ -116,4 +111,25 @@
     margin: 0 auto;
     padding: 25px;
 	background:#FFF;
+}
+
+.collections-often {
+	text-align: center;
+	padding: 10px 20px 0px 20px;
+}
+
+.collections-often ul {
+	display:inline-block;
+}
+
+.collections-often li {
+	min-width: 220px;
+	max-width: 260px;
+	float:left;
+	display: inline-block;
+	border-radius: 5px;
+}
+
+.collections-often li:hover {
+	background: #2e8b5726;
 }
