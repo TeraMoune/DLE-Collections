@@ -1,14 +1,15 @@
 <?xml version="1.0" encoding="utf-8"?>
 <dleplugin>
 	<name>Collections</name>
-	<description>Подборки для DataLife Engine. teramoune@gmail.com, Git: https://github.com/TeraMoune/Collections-DLE</description>
+	<description>Подборки для DataLife Engine.</description>
 	<icon></icon>
 	<version></version>
-	<dleversion>13</dleversion>
+	<dleversion>14</dleversion>
 	<versioncompare>greater</versioncompare>
 	<upgradeurl></upgradeurl>
 	<filedelete>1</filedelete>
 	<needplugin></needplugin>
+	<mnotice>1</mnotice>
 	<mysqlinstall><![CDATA[CREATE TABLE {prefix}_news_collections (
   `id` int(11) NOT NULL auto_increment,
   `user_name` varchar(100) NOT NULL DEFAULT '',
@@ -16,8 +17,12 @@
   `alt_url` varchar(190) NOT NULL DEFAULT '',
   `descr` text NOT NULL,
   `num_elem` int(11) NOT NULL DEFAULT '0',
-  `date` datetime NOT NULL DEFAULT '0000-00-00 00:00:00',
-  `create_date` datetime NOT NULL DEFAULT '0000-00-00 00:00:00',
+  `news_read` int(11) NOT NULL DEFAULT '0',
+  `news_rating` int(11) NOT NULL DEFAULT '0',
+  `news_vote` int(11) NOT NULL DEFAULT '0',
+  `news_comm` int(11) NOT NULL DEFAULT '0',
+  `date` datetime NOT NULL DEFAULT '1970-01-01 01:00:00',
+  `create_date` datetime NOT NULL DEFAULT '1970-01-01 01:00:00',
   `cover` varchar(255) NOT NULL DEFAULT '',
   `news_ids` text NOT NULL,
   `current_tags` text NOT NULL,
@@ -25,6 +30,8 @@
   `keywords` text NOT NULL,
   `metatitle` varchar(255) NOT NULL DEFAULT '',
   `metadescr` varchar(300) NOT NULL DEFAULT '',
+  `xfields_s` varchar(3) NOT NULL Default 'AND',
+  `tags_s` varchar(3) NOT NULL Default 'AND',
   PRIMARY KEY (`id`),
   KEY `user_name` (`user_name`),
   KEY `name` (`name`),
@@ -35,7 +42,7 @@ ALTER TABLE `{prefix}_post` ADD `collections` varchar(190) NOT NULL DEFAULT '0' 
 ALTER TABLE `{userprefix}_users` ADD `favorites_collections` text NOT NULL;
 ALTER TABLE `{prefix}_usergroups` ADD `collections_allow_edit` tinyint(1) NOT NULL DEFAULT '0';
 INSERT INTO `{prefix}_admin_sections` (`name`, `title`, `descr`, `icon`, `allow_groups`) VALUES ('news_collections', 'Подборки новостей', '', '', '1');]]></mysqlinstall>
-	<mysqlupgrade><![CDATA[]]></mysqlupgrade>
+	<mysqlupgrade><![CDATA[ALTER TABLE `dle_news_collections` ADD `news_read` int(11) NOT NULL Default 0 AFTER `num_elem`, ADD `news_rating` int(11) NOT NULL Default 0 AFTER `num_elem`, ADD `news_vote` int(11) NOT NULL Default 0 AFTER `num_elem`, ADD `news_comm` int(11) NOT NULL Default 0 AFTER `num_elem`, ADD `xfields_s` varchar(3) NOT NULL Default 'AND', ADD `tags_s` varchar(3) NOT NULL Default 'AND';]]></mysqlupgrade>
 	<mysqlenable><![CDATA[]]></mysqlenable>
 	<mysqldisable><![CDATA[]]></mysqldisable>
 	<mysqldelete><![CDATA[DROP TABLE IF EXISTS {prefix}_news_collections;
@@ -44,12 +51,13 @@ ALTER TABLE `{userprefix}_users` DROP `favorites_collections`;
 ALTER TABLE `{prefix}_usergroups` DROP `collections_allow_edit`;
 DELETE FROM `{prefix}_admin_sections` WHERE name = 'news_collections';]]></mysqldelete>
 	<phpinstall><![CDATA[$db->query("UPDATE ".PREFIX."_usergroups SET collections_allow_edit = 1 WHERE id = 1");
-//Это просто счётчик, http://teramoune.had.su/statistic.php?module=Collections&act=install-get
 @file_get_contents('http://teramoune.had.su/statistic.php?module=Collections');]]></phpinstall>
 	<phpupgrade><![CDATA[]]></phpupgrade>
 	<phpenable><![CDATA[]]></phpenable>
 	<phpdisable><![CDATA[]]></phpdisable>
 	<phpdelete><![CDATA[]]></phpdelete>
+	<notice><![CDATA[Email: teramoune@gmail.com, 
+Git: https://github.com/TeraMoune/Collections-DLE]]></notice>
 	<file name="engine/engine.php">
 		<operation action="after">
 			<searchcode><![CDATA[elseif ($do == 'stats') $nam_e = $lang['title_stats'];]]></searchcode>
@@ -95,8 +103,8 @@ DELETE FROM `{prefix}_admin_sections` WHERE name = 'news_collections';]]></mysql
 			<searchcode><![CDATA[} elseif ($nam_e) $s_navigation .= " {$config['speedbar_separator']} " . $nam_e;]]></searchcode>
 			<replacecode><![CDATA[} elseif ( $do =='collections' AND ( $collections_id OR $is_fav OR isset($_GET['cstart']) AND intval($_GET['cstart']) > 1 ) ) {
   
-		if ($config['allow_alt_url']) $s_navigation .= " {$config['speedbar_separator']} <span itemscope itemtype=\"http://data-vocabulary.org/Breadcrumb\"><a href=\"" . $config['http_home_url'] . "collections/\" itemprop=\"url\"><span itemprop=\"title\">{$config['collection_speedbar']}</span></a></span>";
-		else $s_navigation .= " {$config['speedbar_separator']} <span itemscope itemtype=\"http://data-vocabulary.org/Breadcrumb\"><a href=\"?do=collections\" itemprop=\"url\"><span itemprop=\"title\">{$config['collection_speedbar']}</span></a></span>";	
+		if ($config['allow_alt_url']) $s_navigation .= " {$config['speedbar_separator']} <span itemprop=\"itemListElement\" itemscope itemtype=\"https://schema.org/ListItem\"><a href=\"" . $config['http_home_url'] . "collections/\" itemprop=\"url\"><span itemprop=\"title\">{$config['collection_speedbar']}</span></a></span>";
+		else $s_navigation .= " {$config['speedbar_separator']} <span itemprop=\"itemListElement\" itemscope itemtype=\"https://schema.org/ListItem\"><a href=\"?do=collections\" itemprop=\"url\"><span itemprop=\"title\">{$config['collection_speedbar']}</span></a></span>";	
 
 } elseif ($nam_e) $s_navigation .= " {$config['speedbar_separator']} " . $nam_e;]]></replacecode>
 		</operation>
@@ -105,6 +113,10 @@ DELETE FROM `{prefix}_admin_sections` WHERE name = 'news_collections';]]></mysql
 			<replacecode><![CDATA[case "collections" :
 	include (DLEPlugins::Check(ENGINE_DIR . '/modules/news_collections.php'));
 	break;]]></replacecode>
+		</operation>
+		<operation action="replace">
+			<searchcode><![CDATA[p.allow_comm, p.fixed, p.tags,]]></searchcode>
+			<replacecode><![CDATA[p.allow_comm, p.fixed, p.tags, p.collections,]]></replacecode>
 		</operation>
 	</file>
 	<file name="engine/modules/show.short.php">
@@ -296,6 +308,36 @@ else $next = $url_page . '/page/' . $next_page . '/';]]></replacecode>
 					
 }]]></replacecode>
 		</operation>
+		<operation action="after">
+			<searchcode><![CDATA[while ( $row = $db->get_row( $sql_result ) ) {]]></searchcode>
+			<replacecode><![CDATA[if( !$row['collections'] ) {
+  
+  	if( $row['tags'] OR $row['xfields'] ) search_collections();
+  	else {
+      
+        $tpl->set( '{collections-link}', $config['collection_speedbar'] . ': Не заданы' );
+        $tpl->set( '{collections}', $config['collection_speedbar'] . ': Не заданы' );
+      	$tpl->set( '{owner-cnews-list}', '' );
+        $tpl->set_block( "'\\[not-collections\\](.*?)\\[/not-collections\\]'si", "" );
+      
+    }
+  
+} else {
+			
+	$collections = array ();
+	$collections_link = array ();
+	$collections_list = explode( ',', $row['collections'] );
+	$config['collection_separator'] = $config['collection_separator'] ? $config['collection_separator'] : ',';	
+  
+  	search_collections(1);
+
+    $tpl->set( '{collections-link}', $config['collection_speedbar'] . ': ' . implode( " {$config['collection_separator']} ", $collections_link ) );
+   	$tpl->set( '{collections}', $config['collection_speedbar'] . ': ' . implode( " {$config['collection_separator']} ", $collections ) );
+  	$tpl->set( '[not-collections]', "" );
+	$tpl->set( '[/not-collections]', "" );
+
+}]]></replacecode>
+		</operation>
 	</file>
 	<file name="engine/modules/show.full.php">
 		<operation action="before">
@@ -318,39 +360,11 @@ else $next = $url_page . '/page/' . $next_page . '/';]]></replacecode>
 	$collections_link = array ();
 	$collections_list = explode( ',', $row['collections'] );
 	$config['collection_separator'] = $config['collection_separator'] ? $config['collection_separator'] : ',';	
-	if( count( $collections_list ) == 1 ) {
-				
-		$collections[] = $collections_info[$collections_list[0]]['name'];
-      
-		if( $config['allow_alt_url'] ) {		
-			$collections_link[] = "<a href=\"" . $config['http_home_url'] . "collections/{$collections_info[$collections_list[0]]['id']}-{$collections_info[$collections_list[0]]['alt_url']}" . "\">{$collections_info[$collections_list[0]]['name']}</a>";
-        } else {		
-      		$collections_link[] = "<a href=\"$PHP_SELF?do=collections&amp;id={$collections_info[$collections_list[0]]['id']}\">{$collections_info[$collections_list[0]]['name']}</a>";
-        }
-      
-	} else {
-				
-		foreach ( $collections_list as $element ) {
-					
-			if( $element ) {
-				$collections[] = $collections_info[$element]['name'];
-              
-				if( $config['allow_alt_url'] ) {	
-					$collections_link[] = "<a href=\"" . $config['http_home_url'] . "collections/{$collections_info[$element]['id']}-{$collections_info[$element]['alt_url']}" . "\">{$collections_info[$element]['name']}</a>";
-                } else {	
-      				$collections_link[] = "<a href=\"$PHP_SELF?do=collections&amp;id={$collections_info[$element]['id']}\">{$collections_info[$element]['name']}</a>";
-                }
-
-			}
-          
-		}
-
-	}
-  
+  	
   	search_collections(1);
 
-    $tpl->set( '{collections-link}', $config['collection_speedbar'] . ': ' . implode( "{$config['collection_separator']}", $collections_link ) );
-   	$tpl->set( '{collections}', $config['collection_speedbar'] . ': ' . implode( "{$config['collection_separator']}", $collections ) );
+    $tpl->set( '{collections-link}', $config['collection_speedbar'] . ': ' . implode( " {$config['collection_separator']} ", $collections_link ) );
+   	$tpl->set( '{collections}', $config['collection_speedbar'] . ': ' . implode( " {$config['collection_separator']} ", $collections ) );
   	$tpl->set( '[not-collections]', "" );
 	$tpl->set( '[/not-collections]', "" );
 
@@ -427,7 +441,7 @@ HTML;]]></replacecode>
 if (!is_array ( $collections_info )) {
 	$collections_info = array ();
 
-	$db->query ( "SELECT id, user_name, name, alt_url, descr, num_elem, date, create_date, cover, news_ids, current_tags, current_xfields FROM " . PREFIX . "_news_collections ORDER BY id ASC" );
+	$db->query ( "SELECT id, user_name, name, alt_url, descr, num_elem, news_read, news_comm, news_vote, news_rating, date, create_date, cover, news_ids, current_tags, current_xfields, xfields_s, tags_s FROM " . PREFIX . "_news_collections ORDER BY id ASC" );
 	while ( $row = $db->get_row () ) {
 
 		$collections_info[$row['id']] = array ();
@@ -585,16 +599,18 @@ if( count($c_list) AND $c_list[0] != 0 ) {
       if( $getCollection['news_ids'] ) {
         
           $tmp_c = explode(',', $getCollection['news_ids']);
-          $tmp_c[] = $row['id'];
+          $tmp_c[] = $news_id;
           $c_list = implode(',', $tmp_c);
         
-      } else $c_list = $row['id'];
+      } else $c_list = $news_id;
 
       @unlink( ENGINE_DIR . '/cache/system/collections.php' );
       @unlink( ENGINE_DIR . '/cache/system/collections_title/collections_title_'.$val.'.php' );
       clear_cache( array('collections_news_', 'cblock_list_') );
       $db->query("UPDATE ".PREFIX."_news_collections SET date = '{$thistime}', num_elem = num_elem+1, news_ids = '{$c_list}' WHERE id = '{$val}'");
-  
+  	  
+      collectionsSumNewsRead($val, $c_list);
+      
     }
     
   }
@@ -635,6 +651,10 @@ if( !$c_allow AND $member_id['user_group'] != "1" ) {
 			<searchcode><![CDATA[$onload_scripts[] = <<<HTML]]></searchcode>
 			<replacecode><![CDATA[$('#collections').chosen({allow_single_deselect:true, no_results_text: 'Ничего не найдено'});]]></replacecode>
 		</operation>
+		<operation action="after">
+			<searchcode><![CDATA[$row['id'] = $db->insert_id();]]></searchcode>
+			<replacecode><![CDATA[$news_id = $row['id'];]]></replacecode>
+		</operation>
 	</file>
 	<file name="engine/inc/editnews.php">
 		<operation action="after">
@@ -645,7 +665,7 @@ if( !is_array ( $collections_info ) ) {
   
 	$collections_info = array ();
 
-	$db->query ( "SELECT id, user_name, name, alt_url, descr, num_elem, date, create_date, cover FROM " . PREFIX . "_news_collections ORDER BY id ASC" );
+	$db->query ( "SELECT id, user_name, name, alt_url, descr, num_elem, news_read, news_comm, news_vote, news_rating, date, create_date, cover, news_ids, current_tags, current_xfields, xfields_s, tags_s FROM " . PREFIX . "_news_collections ORDER BY id ASC" );
 	
   	while( $row = $db->get_row () ) {
 
@@ -712,7 +732,7 @@ if( count($c_list) AND $c_list[0] != 0 ) {
 $c_list = $db->safesql( implode( ',', $c_list ) );]]></replacecode>
 		</operation>
 		<operation action="replace">
-			<searchcode><![CDATA[category='$category_list',]]></searchcode>
+			<searchcode><![CDATA[category='{$category_list}',]]></searchcode>
 			<replacecode><![CDATA[category='$category_list', collections='$c_list',]]></replacecode>
 		</operation>
 		<operation action="before">
@@ -818,6 +838,7 @@ $c_list = $db->safesql( implode( ',', $c_list ) );]]></replacecode>
 
     }    
     
+    collectionsSumExtended_info();
   }
   
 }]]></replacecode>
@@ -858,7 +879,7 @@ $collections_info = get_vars ( "collections" );
 if (!is_array ( $collections_info )) {
 	$collections_info = array ();
 
-	$db->query ( "SELECT id, user_name, name, alt_url, descr, num_elem, date, create_date, cover FROM " . PREFIX . "_news_collections ORDER BY id ASC" );
+	$db->query ( "SELECT id, user_name, name, alt_url, descr, num_elem, news_read, news_comm, news_vote, news_rating, date, create_date, cover, news_ids, current_tags, current_xfields, xfields_s, tags_s FROM " . PREFIX . "_news_collections ORDER BY id ASC" );
 	while ( $row = $db->get_row () ) {
 
 		$collections_info[$row['id']] = array ();
@@ -898,7 +919,7 @@ if( $_REQUEST['action'] == "save" ) {
 					$tmp_c[] = $news_id;
 					$c_list = implode(',', $tmp_c);
 				  
-				} else $c_list = $item_db[0];
+				} else $c_list = $news_id;
 
 				@unlink( ENGINE_DIR . '/cache/system/collections.php' );
 				@unlink( ENGINE_DIR . '/cache/system/collections_title/collections_title_'.$val.'.php' );
@@ -972,7 +993,9 @@ if( $_REQUEST['action'] == "save" ) {
 	  }
 	  
 	}
-	
+
+  	collectionsSumExtended_info();
+  
 	$db->query("UPDATE ".PREFIX."_post SET collections = '{$c_list_post}' WHERE id = '{$news_id}'");
 
 	$buffer = "ok";
@@ -1052,9 +1075,26 @@ echo $buffer;
     $tpl->set( '[/collections-show]', '' );
     $tpl->set_block( "'\\[collections-alllist\\](.*?)\\[/collections-alllist\\]'si", "" );
   
+  	if( $config['collections_often_collections'] AND $ids_r ) {
+      
+        $tpl->set( '[collections-often]', '' );
+        $tpl->set( '[/collections-often]', '' );
+      
+		if( $often_t ) $tpl->set( '{collections-often}', $often_t );
+		else $tpl->set( '{collections-often}', 'Частых подборок нету' );
+      
+    } else {
+      
+      	$tpl->set_block( "'\\[collections-often\\](.*?)\\[/collections-often\\]'si", "" );
+    	$tpl->set( '{collections-often}', '' );
+      
+    }
+  
 } else {
   
+  	$tpl->set_block( "'\\[collections-often\\](.*?)\\[/collections-often\\]'si", "" );
     $tpl->set_block( "'\\[collections-show\\](.*?)\\[/collections-show\\]'si", "" );
+  
   	if( $do == 'collections' ) {
       
       $tpl->set( '[collections-alllist]', '' );
@@ -1069,13 +1109,15 @@ echo $buffer;
       $tpl->set( '{c-descr}', '' );
       
     }
+  
 	$tpl->set( '{c-meta-descr}', "" );
+  
 }]]></replacecode>
 		</operation>
 		<operation action="after">
 			<searchcode><![CDATA[$tpl->compile ( 'main' );]]></searchcode>
-			<replacecode><![CDATA[if (stripos ( $tpl->result['main'], "{collections" ) !== false) {
-	$tpl->result['main'] = preg_replace_callback ( "#\\{collections(.+?)?\\}#i", "show_collections", $tpl->result['main'] );
+			<replacecode><![CDATA[if (stripos ( $tpl->result['main'], "{collections-custom" ) !== false) {
+	$tpl->result['main'] = preg_replace_callback ( "#\\{collections-custom(.+?)?\\}#i", "show_collections", $tpl->result['main'] );
 }]]></replacecode>
 		</operation>
 		<operation action="before">
@@ -1099,7 +1141,7 @@ echo $buffer;
       $collections_link = array ();	
       $collections_list = array();
       
-    } else $collections_list = array();
+    } else $collections_list = count($collections_list) > 0 ? $collections_list : array();
   
   	foreach( $collections_info as $val) {
       
@@ -1112,7 +1154,7 @@ echo $buffer;
       
       	if( $val['current_xfields'] ) {
 			
-			$s_t = explode('||', $val['current_xfields']);
+			$s_t = explode(', ', $val['current_xfields']);
 			
 			if( preg_match("/" . addslashes( implode('|', $s_t) ) . "/i", $row['xfields']) ) $collections_list[] = $val['id'];
 			
@@ -1120,65 +1162,74 @@ echo $buffer;
       
     }  
   
-  	if( count($collections_list) ) {	
+  	if( count($collections_list) ) {
   
-	$config['collection_separator'] = $config['collection_separator'] ? $config['collection_separator'] : ',';
-      
-	if( count( $collections_list ) == 1 ) {
-				
-		$collections[] = $collections_info[$collections_list[0]]['name'];
-      
-		if( $config['allow_alt_url'] ) {
-          
-			$collections_link[] = "<a href=\"" . $config['http_home_url'] . "collections/{$collections_info[$collections_list[0]]['id']}-{$collections_info[$collections_list[0]]['alt_url']}" . "\">{$collections_info[$collections_list[0]]['name']}</a>";
-        
-        } else {
-          
-      		$collections_link[] = "<a href=\"$PHP_SELF?do=collections&amp;id={$collections_info[$collections_list[0]]['id']}\">{$collections_info[$collections_list[0]]['name']}</a>";
-        
-        }
-      
-	} else {
-				
-		foreach ( $collections_list as $element ) {
+		$config['collection_separator'] = $config['collection_separator'] ? $config['collection_separator'] : ',';
+		  
+		if( count( $collections_list ) == 1 ) {
 					
-			if( $element ) {
-				$collections[] = $collections_info[$element]['name'];
-              
-				if( $config['allow_alt_url'] ) {	
-					$collections_link = "<a href=\"" . $config['http_home_url'] . "collections/{$collections_info[$element]['id']}-{$collections_info[$element]['alt_url']}" . "\">{$collections_info[$element]['name']}</a>";
-                } else {	
-      				$collections_link[] = "<a href=\"$PHP_SELF?do=collections&amp;id={$collections_info[$element]['id']}\">{$collections_info[$element]['name']}</a>";
-                }
-
+			$collections[] = $collections_info[$collections_list[0]]['name'];
+		  
+			if( $config['allow_alt_url'] ) {
+			  
+				$collections_link[] = "<a href=\"" . $config['http_home_url'] . "collections/{$collections_info[$collections_list[0]]['id']}-{$collections_info[$collections_list[0]]['alt_url']}" . "\">{$collections_info[$collections_list[0]]['name']}</a>";
+			
+			} else {
+			  
+				$collections_link[] = "<a href=\"$PHP_SELF?do=collections&amp;id={$collections_info[$collections_list[0]]['id']}\">{$collections_info[$collections_list[0]]['name']}</a>";
+			
 			}
-          
-		}  
-  
-    }
+		  
+		} else {
+					
+			foreach ( $collections_list as $element ) {
+						
+				if( $element ) {
+					$collections[] = $collections_info[$element]['name'];
+				  
+					if( $config['allow_alt_url'] ) {	
+						$collections_link[] = "<a href=\"" . $config['http_home_url'] . "collections/{$collections_info[$element]['id']}-{$collections_info[$element]['alt_url']}" . "\">{$collections_info[$element]['name']}</a>";
+					} else {	
+						$collections_link[] = "<a href=\"$PHP_SELF?do=collections&amp;id={$collections_info[$element]['id']}\">{$collections_info[$element]['name']}</a>";
+					}
 
-    if( !$t ) {
-      
-        $collections_link = implode( "{$config['collection_separator']}", $collections_link );		
-        $collections = implode( "{$config['collection_separator']}", $collections );
+				}
+			  
+			}  
+	  
+		}
 
-        $tpl->set( '{collections-link}', 'Подборки: ' . $collections_link );
-        $tpl->set( '{collections}', 'Подборки: ' . $collections );
-        $tpl->set( '[not-collections]', "" );
-        $tpl->set( '[/not-collections]', "" );
-      
-    }
-      
+		if( !$t ) {
+		  
+			$collections_link = implode( " {$config['collection_separator']} ", $collections_link );		
+			$collections = implode( " {$config['collection_separator']} ", $collections );
+
+			$tpl->set( '{collections-link}', 'Подборки: ' . $collections_link );
+			$tpl->set( '{collections}', 'Подборки: ' . $collections );
+			$tpl->set( '[not-collections]', "" );
+			$tpl->set( '[/not-collections]', "" );
+		 
+		}
+
+		if (stripos ( $tpl->copy_template, "{collections-custom" ) !== false) {
+			$tpl->copy_template = preg_replace_callback ( "#\\{collections-custom(.+?)?\\}#i", "show_collections", $tpl->copy_template );
+		}	
+
+	  
     } else {
       
-      if( !$t ) {
-        
-        $tpl->set( '{collections-link}', 'Подборки: Не заданы' );
-        $tpl->set( '{collections}', 'Подборки: Не заданы' );
-        $tpl->set( '{owner-cnews-list}', '' );
-        $tpl->set_block( "'\\[not-collections\\](.*?)\\[/not-collections\\]'si", "" );
-        
-      }
+		if( !$t ) {
+			
+			$tpl->set( '{collections-link}', 'Подборки: Не заданы' );
+			$tpl->set( '{collections}', 'Подборки: Не заданы' );
+			$tpl->set( '{owner-cnews-list}', '' );
+			$tpl->set_block( "'\\[not-collections\\](.*?)\\[/not-collections\\]'si", "" );
+			
+			if (stripos ( $tpl->copy_template, "{collections-custom" ) !== false) {
+				$tpl->copy_template = preg_replace ( "#\\{collections-custom(.+?)?\\}#i", "", $tpl->copy_template );
+			}		
+			
+		}
       
     }
 }
@@ -1189,35 +1240,56 @@ function show_collections( $matches=array() ) {
 	$param_str = trim($matches[1]);
 	$custom_cache_id = "show_collections".$param_str.$config['skin'];
 	$thisdate = date( "Y-m-d H:i:s", $_TIME );
-	$sql_select = "SELECT id, name, alt_url, descr, date, create_date, num_elem, cover FROM " . PREFIX . "_news_collections";
+	$sql_select = "SELECT id, name, alt_url, descr, date, create_date, num_elem, news_read, news_comm, news_vote, news_rating, cover FROM " . PREFIX . "_news_collections";
 	$where = array();
 	$allow_cache = $config['allow_cache'];
 
-	if( preg_match( "#owner_news=['\"]true['\"]#i", $param_str, $match ) AND count($collections_list) > 0 ) {
+	if( preg_match( "#owner_news=['\"]true['\"]#i", $param_str, $match ) ) {
 
+      	if( !count($collections_list) ) return;
+      
 		$temp_array = implode(',', $collections_list);
 
 		$custom_category = $db->safesql( trim($temp_array) );
 		$custom_category = str_replace( ",", "','", $custom_category );
 	
 		$where[] = "id IN ('" . $custom_category . "')";
-
+		$owner = true;
+      
 	} else {
 		
 		if( preg_match( "#id=['\"](.+?)['\"]#i", $param_str, $match ) ) {
 
-			$temp_array = array();
-			$where_id = array();
-			$match[1] = intval($match[1]);
+            $temp_array = array();
+            $where_id = array();
+            $match[1] = explode (',', trim($match[1]));
 
-			if ( $match[1] ) {
+            foreach ($match[1] as $value) {
 
-				$where[] = "id ='" . $match[1] . "'";
+                if( count(explode('-', $value)) == 2 ) {
+                    $value = explode('-', $value);
+                    $where_id[] = "id >= '" . intval($value[0]) . "' AND id <= '".intval($value[1])."'";
 
-			}
+                } else $temp_array[] = intval($value);
 
-		} else $where[] = "1";		
-		
+            }
+
+            if ( count($temp_array) ) {
+
+                $where_id[] = "id IN ('" . implode("','", $temp_array) . "')";
+
+            }
+
+            if ( count($where_id) ) { 
+                $custom_id = "(".implode(' OR ', $where_id).")";
+                $where[] = $custom_id;
+
+            }          
+
+		} else $where[] = "1";
+      
+		$owner = false;
+      
 	}
   
 	if( preg_match( "#days=['\"](.+?)['\"]#i", $param_str, $match ) ) {
@@ -1252,19 +1324,25 @@ function show_collections( $matches=array() ) {
 
 	if( preg_match( "#limit=['\"](.+?)['\"]#i", $param_str, $match ) ) {
 	
-		$limit = intval($match[1]);
+		$limit = " LIMIT " . intval($match[1]);
 	
-	} else $limit = 1;  
+	} else {
+		
+		if( !$owner ) $limit = " LIMIT 1";
+		
+	}  
 	  
 	if( preg_match( "#order=['\"](.+?)['\"]#i", $param_str, $match ) ) {
 	
-		$allowed_sort = array ('date' => 'date', 'create_date' => 'create_date', 'num_elem' => 'num_elem', 'name' => 'name', 'rand' => 'RAND()' );
-
+		$allowed_sort = array ('date' => 'date', 'create_date' => 'create_date', 'num_elem' => 'num_elem', 'news_read' => 'news_read', 'news_rating' => 'news_rating', 'news_vote' => 'news_vote', 'news_comm' => 'news_comm', 'name' => 'name', 'rand' => 'RAND()' );
+		$extended = array('news_read','news_rating','news_vote','news_comm');
+      
 		$match[1] = strtolower($match[1]);
 
 		if ( $allowed_sort[$match[1]] ) $news_sort = $allowed_sort[$match[1]];
 
 		if ( $match[1] == "rand" ) { $news_msort = ""; }
+      	if ( !$config['collections_extended_info'] AND in_array($match[1], $extended) ) { $news_sort = "date"; }
 
 	} else $news_sort = "date";
 
@@ -1282,7 +1360,7 @@ function show_collections( $matches=array() ) {
 		$tpl->dir = TEMPLATE_DIR;				
 
 		$tpl->load_template( $custom_template . '.tpl' );
-		$sql_select .= " WHERE ".implode(' AND ', $where)." ORDER BY " . $news_sort . " " . $news_msort . " LIMIT " . $limit;
+		$sql_select .= " WHERE ".implode(' AND ', $where)." ORDER BY " . $news_sort . " " . $news_msort . $limit;
 				
 		$sql_result = $db->query( $sql_select );
 
@@ -1360,7 +1438,11 @@ function show_collections( $matches=array() ) {
 			if( $config['allow_alt_url'] ) $url = $config['http_home_url'] . 'collections/' . $row['id'] . '-' . $row['alt_url'];
 			else $url = $config['http_home_url'] . '?do=collections&id=' . $row['id'];
 
-			$tpl->set( '{num_elem}', intval($row['num_elem']) );
+            $tpl->set( '{num_elem}', 	intval($row['num_elem']) );
+            $tpl->set( '{news_read}', 	intval($row['news_read']) );
+            $tpl->set( '{news_rating}', intval($row['news_rating']) );
+            $tpl->set( '{news_vote}', 	intval($row['news_vote']) );
+            $tpl->set( '{news_comm}', 	intval($row['news_comm']) );          
 			$tpl->set( '{url}', $url );
 
 			$tpl->compile( 'collections' );	
@@ -1393,6 +1475,103 @@ function show_news_collections( $matches=array() ) {
 	} else $ids = 0;
 
   	return $ids;
+}
+
+function collectionsSumExtended_info( $c_id = 0, $news_ids = 0 ) {
+  	global $db, $config;	
+  
+  	if( !$config['collections_extended_info'] ) return false;
+  
+    if( $c_id ) {
+	
+        $news_read = $db->super_query("SELECT count(p.id) as num_elem, sum(e.news_read) as sum_read, sum(e.rating) as sum_rating, sum(e.vote_num) as sum_vote, sum(p.comm_num) as sum_comm FROM `".PREFIX."_post` p LEFT JOIN `".PREFIX."_post_extras` e ON (p.id=e.news_id) WHERE id IN({$news_ids})");
+		
+        $sum_info = array();
+        
+      	if( $news_read['num_elem'] ) 	$sum_info[] = "num_elem = '{$news_read['num_elem']}'";
+        if( $news_read['sum_read'] ) 	$sum_info[] = "news_read = '{$news_read['sum_read']}'";
+        if( $news_read['sum_rating'] ) 	$sum_info[] = "news_rating = '{$news_read['sum_rating']}'";
+        if( $news_read['sum_vote'] ) 	$sum_info[] = "news_vote = '{$news_read['sum_vote']}'";
+        if( $news_read['sum_comm'] ) 	$sum_info[] = "news_comm = '{$news_read['sum_comm']}'";
+        
+        
+        if( count($sum_info) ) {
+          
+			$sum_info = implode(', ', $sum_info);
+          	$db->query( "UPDATE " . PREFIX . "_news_collections SET {$sum_info} WHERE id = '{$c_id}'" );
+
+        }  
+
+    } else {
+
+      $sql = $db->super_query("SELECT id, news_ids, current_tags, current_xfields FROM `".PREFIX."_news_collections`", true);
+
+      foreach( $sql as $row ) {
+		
+        if( !$row['news_ids'] AND (!$row['current_tags'] AND !$row['current_xfields']) ) continue;
+        
+        $wh = array();
+        if( $row['news_ids'] ) $wh[] = "id IN({$row['news_ids']})";
+        elseif($row['current_tags'] ) {
+			$tags_tmp = explode(', ', $row['current_tags']);
+			$wh[] = "tags regexp '[[:<:]](" . @$db->safesql( implode('|', $tags_tmp) ) . ")[[:>:]]'";
+        } elseif($row['current_xfields'] ) {
+			$xfields_tmp = explode(', ', $row['current_xfields']);
+			$wh[] = "xfields regexp '[[:<:]](" . @$db->safesql( implode('|', $xfields_tmp) ) . ")[[:>:]]'";
+		}
+		$wh = implode($wh);
+        
+        $news_read = $db->super_query("SELECT count(p.id) as num_elem, sum(e.news_read) as sum_read, sum(e.rating) as sum_rating, sum(e.vote_num) as sum_vote, sum(p.comm_num) as sum_comm FROM `".PREFIX."_post` p LEFT JOIN `".PREFIX."_post_extras` e ON (p.id=e.news_id) WHERE {$wh}");
+		
+        $sum_info = array();
+        
+        if( $news_read['num_elem'] ) 	$sum_info[] = "num_elem = '{$news_read['num_elem']}'";
+        if( $news_read['sum_read'] ) 	$sum_info[] = "news_read = '{$news_read['sum_read']}'";
+        if( $news_read['sum_rating'] ) 	$sum_info[] = "news_rating = '{$news_read['sum_rating']}'";
+        if( $news_read['sum_vote'] ) 	$sum_info[] = "news_vote = '{$news_read['sum_vote']}'";
+        if( $news_read['sum_comm'] ) 	$sum_info[] = "news_comm = '{$news_read['sum_comm']}'";
+        
+        
+        if( count($sum_info) ) {
+          
+			$sum_info = implode(', ', $sum_info);
+          	$db->query( "UPDATE " . PREFIX . "_news_collections SET {$sum_info} WHERE id = '{$row['id']}'" );
+
+        }
+
+      }
+
+    }
+  
+}
+
+function collections_often($ids = 0) {
+  global $collections_id, $config;
+  
+  if( !$ids ) return false;
+  
+  $often_limit = $config['collections_min_often'] ? $config['collections_min_often'] : 3;
+  $t_ids = explode(',', $ids);
+  $ids_tmp = array();
+  $t_ids = array_count_values($t_ids);
+
+  foreach( $t_ids as $key => $val ) {
+    
+    if( $key != $collections_id ) {
+		
+	  if( $val >= $often_limit ) $ids_tmp[] = $key;	  
+      
+    }
+    
+  }
+
+  if( count($ids_tmp) ) {
+	  
+    arsort($ids_tmp);
+  	return implode(',', $ids_tmp);
+	
+  } else return null;
+  
 }]]></replacecode>
 		</operation>
 	</file>
@@ -1435,12 +1614,14 @@ function show_news_collections( $matches=array() ) {
 
     if( count( $list ) ) $c_list = $db->safesql(implode( ",", $list ));
     else $c_list = "";
-
+	
     @unlink( ENGINE_DIR . '/cache/system/collections_title/collections_title_'.$val.'.php' );  
     $db->query("UPDATE ".PREFIX."_news_collections SET num_elem = num_elem - 1, news_ids = '{$c_list}' WHERE id = '{$val}'");
 
   }
-    
+  
+  collectionsSumExtended_info();
+  
 }]]></replacecode>
 		</operation>
 	</file>
@@ -1536,6 +1717,276 @@ function show_news_collections( $matches=array() ) {
 	} 
 
 	return false;	
+}]]></replacecode>
+		</operation>
+		<operation action="before">
+			<searchcode><![CDATA[function dle_session( $sid = false ) {]]></searchcode>
+			<replacecode><![CDATA[function collectionsSumExtended_info( $c_id = 0, $news_ids = 0 ) {
+  	global $db, $config;	
+  
+  	if( !$config['collections_extended_info'] ) return false;
+  
+    if( $c_id ) {
+
+        $news_read = $db->super_query("SELECT sum(e.news_read) as sum_read, sum(e.rating) as sum_rating, sum(e.vote_num) as sum_vote, sum(p.comm_num) as sum_comm FROM `".PREFIX."_post` p LEFT JOIN `".PREFIX."_post_extras` e ON (p.id=e.news_id) WHERE id IN({$news_ids})");
+		
+        $sum_info = array();
+        
+        if( $news_read['sum_read'] ) 	$sum_info[] = "news_read = '{$news_read['sum_read']}'";
+        if( $news_read['sum_rating'] ) 	$sum_info[] = "sum_rating = '{$news_read['sum_rating']}'";
+        if( $news_read['sum_vote'] ) 	$sum_info[] = "sum_vote = '{$news_read['sum_vote']}'";
+        if( $news_read['sum_comm'] ) 	$sum_info[] = "sum_comm = '{$news_read['sum_comm']}'";
+        
+        
+        if( count($sum_info) ) {
+          
+			$sum_info = implode(', ', $sum_info);
+          	$db->query( "UPDATE " . PREFIX . "_news_collections SET {$sum_info} WHERE id = '{$c_id}'" );
+
+        }  
+
+    } else {
+
+      $sql = $db->super_query("SELECT id, news_ids, current_tags, current_xfields FROM `".PREFIX."_news_collections`", true);
+
+      foreach( $sql as $row ) {
+        
+        if( !$row['news_ids'] OR !$row['current_tags'] OR !$row['current_xfields'] ) continue;
+        
+        $wh = array();
+        if( $row['news_ids'] ) $wh[] = "id IN({$row['news_ids']})";
+        elseif($row['current_tags'] ) $wh[] = "tags LIKE '%{$val}%'";
+        elseif($row['current_xfields'] ) $wh[] = "xfields LIKE '%{$val}%'";
+        
+        $news_read = $db->super_query("SELECT sum(e.news_read) as sum_read, sum(e.rating) as sum_rating, sum(e.vote_num) as sum_vote, sum(p.comm_num) as sum_comm FROM `".PREFIX."_post` p LEFT JOIN `".PREFIX."_post_extras` e ON (p.id=e.news_id) WHERE {$wh}");        
+		
+        $sum_info = array();
+        
+        if( $news_read['sum_read'] ) 	$sum_info[] = "news_read = '{$news_read['sum_read']}'";
+        if( $news_read['sum_rating'] ) 	$sum_info[] = "sum_rating = '{$news_read['sum_rating']}'";
+        if( $news_read['sum_vote'] ) 	$sum_info[] = "sum_vote = '{$news_read['sum_vote']}'";
+        if( $news_read['sum_comm'] ) 	$sum_info[] = "sum_comm = '{$news_read['sum_comm']}'";
+        
+        
+        if( count($sum_info) ) {
+          
+			$sum_info = implode(', ', $sum_info);
+          	$db->query( "UPDATE " . PREFIX . "_news_collections SET {$sum_info} WHERE id = '{$row['id']}'" );
+
+        }
+
+      }
+
+    }
+  
+}]]></replacecode>
+		</operation>
+	</file>
+	<file name="engine/modules/cron.php">
+		<operation action="before">
+			<searchcode><![CDATA[clear_cache();]]></searchcode>
+			<replacecode><![CDATA[collectionsSumExtended_info();]]></replacecode>
+		</operation>
+	</file>
+	<file name="engine/inc/addnews.php">
+		<operation action="after">
+			<searchcode><![CDATA[$category_list = $db->safesql( implode( ',', $category_list ) );]]></searchcode>
+			<replacecode><![CDATA[if( !is_array($_POST['collections_list']) ) $_POST['collections_list'] = array ();
+		
+if( !count( $_POST['collections_list'] ) ) {
+			
+	$c_list = array ();
+	$c_list[] = '0';
+			
+} else $c_list = $_POST['collections_list'];
+
+$collections_list = array();
+	
+foreach ( $c_list as $value ) {
+	$collections_list[] = intval($value);
+}
+
+$c_list = $collections_list;
+$collections_list = $db->safesql( implode( ',', $collections_list ) );
+
+$c_allow = $user_group[$member_id['user_group']]['collections_allow_edit'];
+
+if( count($c_list) AND $c_list[0] != 0 ) {
+
+	if( !$c_allow AND $member_id['user_group'] != "1" ) {
+		msg( "error", array('javascript:history.go(-1)' => $lang['addnews'], '' => $lang['addnews_error'] ), "Вы не можете указывать новостям подборки.", "javascript:history.go(-1)" );
+	}
+
+}]]></replacecode>
+		</operation>
+		<operation action="replace">
+			<searchcode><![CDATA[category, alt_name,]]></searchcode>
+			<replacecode><![CDATA[category, alt_name, collections,]]></replacecode>
+		</operation>
+		<operation action="replace">
+			<searchcode><![CDATA['$category_list', '$alt_name',]]></searchcode>
+			<replacecode><![CDATA['$category_list', '$alt_name', '$collections_list',]]></replacecode>
+		</operation>
+		<operation action="before">
+			<searchcode><![CDATA[clear_cache( array('news_', 'tagscloud_', 'archives_', 'calendar_', 'topnews_', 'rss', 'stats') );]]></searchcode>
+			<replacecode><![CDATA[if( count($c_list) AND $c_list[0] != 0 ) {
+  
+  foreach( $c_list as $val ) {
+    
+    if( $val ) {
+    
+      $getCollection = $db->super_query("SELECT news_ids FROM ".PREFIX."_news_collections WHERE id = '{$val}'");	
+
+      if( $getCollection['news_ids'] ) {
+        
+          $tmp_c = explode(',', $getCollection['news_ids']);
+          $tmp_c[] = $id;
+          $c_list = implode(',', $tmp_c);
+        
+      } else $c_list = $id;
+
+      @unlink( ENGINE_DIR . '/cache/system/collections.php' );
+      @unlink( ENGINE_DIR . '/cache/system/collections_title/collections_title_'.$val.'.php' );
+      clear_cache( array('collections_news_', 'cblock_list_') );
+      $db->query("UPDATE ".PREFIX."_news_collections SET date = '{$thistime}', num_elem = num_elem+1, news_ids = '{$c_list}' WHERE id = '{$val}'");
+  	  
+      collectionsSumExtended_info($val, $c_list);
+      
+    }
+    
+  }
+  
+}]]></replacecode>
+		</operation>
+		<operation action="after">
+			<searchcode><![CDATA[$categories_list = CategoryNewsSelection( 0, 0 );]]></searchcode>
+			<replacecode><![CDATA[$collections_info = get_vars ( "collections" );
+
+if (!is_array ( $collections_info )) {
+	$collections_info = array ();
+
+	$db->query ( "SELECT id, user_name, name, alt_url, descr, num_elem, news_read, news_comm, news_vote, news_rating, date, create_date, cover, news_ids, current_tags, current_xfields, xfields_s, tags_s FROM " . PREFIX . "_news_collections ORDER BY id ASC" );
+	while ( $row = $db->get_row () ) {
+
+		$collections_info[$row['id']] = array ();
+
+		foreach ( $row as $key => $value ) {
+			$collections_info[$row['id']][$key] = stripslashes ( $value );
+		}
+
+	}
+	set_vars ( "collections", $collections_info );
+	$db->free ();
+}
+
+foreach( $collections_info as $val ) {
+ 	$c_opt .= '<option value="'.$val['id'].'">'.$val['name'].'</option>';
+}]]></replacecode>
+		</operation>
+		<operation action="after">
+			<searchcode><![CDATA[ <div class="form-group">
+  <label class="control-label col-sm-2">{$lang['addnews_cat']}</label>
+  <div class="col-sm-10">
+	<select data-placeholder="{$lang['addnews_cat_sel']}" title="{$lang['addnews_cat_sel']}" name="category[]" id="category" onchange="onCategoryChange(this)" $category_multiple style="width:100%;max-width:350px;">{$categories_list}</select>
+  </div>
+</div>]]></searchcode>
+			<replacecode><![CDATA[ <div class="form-group">
+  <label class="control-label col-sm-2">Подборки:</label>
+  <div class="col-sm-10">
+	<select data-placeholder="Выберите подборки..." title="Выберите подборки..." name="collections_list[]" id="collections" class="categoryselect" multiple style="width:100%;max-width:350px;">{$c_opt}</select>
+  </div>
+</div>]]></replacecode>
+		</operation>
+		<operation action="after">
+			<searchcode><![CDATA[$('.categoryselect').chosen({no_results_text: '{$lang['addnews_cat_fault']}'});]]></searchcode>
+			<replacecode><![CDATA[$('#collections').chosen({no_results_text: 'Подборок не найдено'});]]></replacecode>
+		</operation>
+	</file>
+	<file name="engine/classes/google.class.php">
+		<operation action="before">
+			<searchcode><![CDATA[function get_categories() {]]></searchcode>
+			<replacecode><![CDATA[function get_collections() {
+	global $db, $user_group;
+		
+	$collections_info = get_vars( "collections" );
+	$this->priority = $this->collections_priority;
+		
+    if (!is_array ( $collections_info )) {
+        $collections_info = array ();
+
+        $db->query ( "SELECT id, user_name, name, alt_url, descr, num_elem, news_read, news_comm, news_vote, news_rating, date, create_date, cover, news_ids, current_tags, current_xfields FROM " . PREFIX . "_news_collections ORDER BY id ASC" );
+        while ( $row = $db->get_row () ) {
+
+            $collections_info[$row['id']] = array ();
+
+            foreach ( $row as $key => $value ) {
+                $collections_info[$row['id']][$key] = stripslashes ( $value );
+            }
+
+        }
+        set_vars ( "collections", $collections_info );
+        $db->free ();
+    }
+		
+	$xml = "";
+	$lastmod = date( "Y-m-d" );
+		
+	//$allow_list = explode ( ',', $user_group[5]['allow_cats'] );
+	//$not_allow_cats = explode ( ',', $user_group[5]['not_allow_cats'] );
+		
+	foreach ( $collections_info as $row ) {
+			
+		//if ($allow_list[0] != "all") {
+		//	if (!$user_group[5]['allow_short'] AND !in_array( $cats['id'], $allow_list )) continue;
+		//}
+			
+		//if ($not_allow_cats[0] != "") {
+		//	if (!$user_group[5]['allow_short'] AND in_array( $cats['id'], $not_allow_cats )) continue;
+		//}
+			
+		if( $this->allow_url ) $loc = $this->home . $row['id'] . '-' . $row['alt_url'];
+		else $loc = $this->home . "index.php?do=collections&id=" . $row['id'];
+			
+		$xml .= $this->get_xml( $loc, $lastmod );
+	}
+		
+	return $xml;
+}]]></replacecode>
+		</operation>
+		<operation action="before">
+			<searchcode><![CDATA[$map .= $this->get_news();]]></searchcode>
+			<replacecode><![CDATA[$map .= $this->get_collections();]]></replacecode>
+		</operation>
+	</file>
+	<file name="engine/modules/show.custom.php">
+		<operation action="after">
+			<searchcode><![CDATA[while ( $row = $db->get_row( $sql_result ) ) {]]></searchcode>
+			<replacecode><![CDATA[if( !$row['collections'] ) {
+  
+  	if( $row['tags'] OR $row['xfields'] ) search_collections();
+  	else {
+      
+        $tpl->set( '{collections-link}', $config['collection_speedbar'] . ': Не заданы' );
+        $tpl->set( '{collections}', $config['collection_speedbar'] . ': Не заданы' );
+      	$tpl->set( '{owner-cnews-list}', '' );
+        $tpl->set_block( "'\\[not-collections\\](.*?)\\[/not-collections\\]'si", "" );
+      
+    }
+  
+} else {
+			
+	$collections = array ();
+	$collections_link = array ();
+	$collections_list = explode( ',', $row['collections'] );
+	$config['collection_separator'] = $config['collection_separator'] ? $config['collection_separator'] : ',';	
+  
+  	search_collections(1);
+
+    $tpl->set( '{collections-link}', $config['collection_speedbar'] . ': ' . implode( " {$config['collection_separator']} ", $collections_link ) );
+   	$tpl->set( '{collections}', $config['collection_speedbar'] . ': ' . implode( " {$config['collection_separator']} ", $collections ) );
+  	$tpl->set( '[not-collections]', "" );
+	$tpl->set( '[/not-collections]', "" );
+
 }]]></replacecode>
 		</operation>
 	</file>
