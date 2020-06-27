@@ -44,6 +44,10 @@ if( $collections_id ) {
 	if( $collections['metadescr'] ) $seo_descr = strip_tags($collections['metadescr']);
 	else $seo_descr = strip_tags($collections['descr']);
 
+	if( $config['allow_alt_url'] ) $canonical = $config['http_home_url'] . 'collections/' . $collections['id'] . '-' . $collections['alt_url'];
+	else $canonical = $config['http_home_url'] . '?do=collections&id=' . $collections['id'];	
+	
+
 	if ( $is_logged and ( $user_group[$member_id['user_group']]['allow_edit'] and !$user_group[$member_id['user_group']]['allow_all_edit'] ) ) $config['allow_cache'] = false;
 	if ( isset($_SESSION['dle_no_cache']) AND $_SESSION['dle_no_cache'] ) $config['allow_cache'] = false;
 	if ( $cstart ) $cache_id = ($cstart / $config['collection_news_number']) + 1;
@@ -79,25 +83,35 @@ if( $collections_id ) {
 			
 			if( $collections['current_tags'] ) {
 				
-				$collections['current_tags'] = explode(', ', $collections['current_tags']);
-				$current_select_tags = " INNER JOIN " . PREFIX . "_tags t on (t.news_id=p.id) ";	
-				$where[] = "t.tag regexp '[[:<:]](" . @$db->safesql( implode('|', $collections['current_tags']) ) . ")[[:>:]]'";
-			
+				$collections['current_tags'] = explode(',', $collections['current_tags']);
+				$regexp_arr = array();
+				$current_select_tags = " INNER JOIN " . PREFIX . "_tags t on (t.news_id=p.id) ";
+					
+				foreach( $collections['current_tags'] as $val ) {
+						
+					$val = @$db->safesql( trim($val) );
+					//$like_arr[] = "p.xfields like '%{$val}%'";
+					$regexp_arr[] = "t.tag regexp '[[:<:]](" . $val . ")[[:>:]]'";
+		
+				}
+
+				$where[] = implode(" {$collections['tags_s']} ", $regexp_arr);
 			}
 			
 			if( $collections['current_xfields'] ) {
 				
-				$collections['current_xfields'] = explode('||', $collections['current_xfields']);
-				$like_arr = array();
+				$collections['current_xfields'] = explode(',', $collections['current_xfields']);
+				$regexp_arr = array();
 				
 				foreach( $collections['current_xfields'] as $val ) {
 					
-					$val = @$db->safesql( $val );
-					$like_arr[] = "p.xfields like '%{$val}%'";
-				
+					$val = @$db->safesql( trim($val) );
+					//$like_arr[] = "p.xfields like '%{$val}%'";
+					$regexp_arr[] = "p.xfields regexp '[[:<:]](" . $val . ")[[:>:]]'";
+
 				}
 				
-				$where[] = implode(' AND ', $like_arr);
+				$where[] = implode(" {$collections['xfields_s']} ", $regexp_arr);
 				
 			}			
 			
@@ -109,16 +123,24 @@ if( $collections_id ) {
 		}	
 
 		if( count($where) ) $where = implode(' AND ', $where);
+		if( $config['collections_often_collections'] ) $string_c = ", if(collections,GROUP_CONCAT(collections SEPARATOR ','),null) as collections ";
+		else $string_c = " ";
 		
 		$sql_select = "SELECT p.id, p.autor, p.date, p.short_story, CHAR_LENGTH(p.full_story) as full_story, p.full_story as full_story_text, p.xfields, p.title, p.category, p.alt_name, p.comm_num, p.allow_comm, p.fixed, p.tags, e.news_read, e.allow_rate, e.rating, e.vote_num, e.votes, e.view_edit, e.editdate, e.editor, e.reason FROM " . PREFIX . "_post p{$current_select_tags}LEFT JOIN " . PREFIX . "_post_extras e ON (p.id=e.news_id) WHERE {$where} AND p.approve=1 ORDER BY " . $news_sort_by . " " . $news_direction_by . " LIMIT " . $cstart . "," . $config['collection_news_number'];
-		$sql_count = "SELECT COUNT(*) as count FROM " . PREFIX . "_post p{$current_select_tags}WHERE {$where} AND approve=1";
-		
+		$sql_count = "SELECT COUNT(*) as count{$string_c}FROM " . PREFIX . "_post p{$current_select_tags}WHERE {$where} AND approve=1";
 		
 		$allow_active_news = true;
 		$view_template = "collections";
 		$config['news_number'] = $config['collection_news_number'];
 		include_once (DLEPlugins::Check(ENGINE_DIR . '/modules/show.short.php'));
+		
+		if( $config['collections_often_collections'] ) {
+		
+			$ids_r = collections_often($cr);
+			if( $ids_r ) $often_t = show_collections(array( 1 => 'id="'.$ids_r.'" limit="'.( $config['collections_often_limit'] ? $config['collections_often_limit'] : 3 ).'"'));
 			
+		}
+		
 		if ($config['files_allow']) if (strpos ( $tpl->result['content'], "[attachment=" ) !== false) {
 			$tpl->result['content'] = show_attach ( $tpl->result['content'], $attachments );
 		}
@@ -129,6 +151,9 @@ if( $collections_id ) {
 	}
 	
 } else {
+	
+	if( $config['allow_alt_url'] ) $canonical = $config['http_home_url'] . 'collections/';
+	else $canonical = $config['http_home_url'] . '?do=collections';
 
 	if( $is_fav ) {
 		
@@ -279,24 +304,34 @@ if( $collections_id ) {
 		
 		if( $row['current_tags'] ) {
 			
-			$row['current_tags'] = explode(', ', $row['current_tags']);
-				
-			$where_count[] = "tags regexp '[[:<:]](" . implode('|', $row['current_tags']) . ")[[:>:]]'";
+			$row['current_tags'] = explode(',', $row['current_tags']);
+			$regexp_arr = array();	
+			foreach( $row['current_tags'] as $val ) {
+					
+				$val = @$db->safesql( trim($val) );
+				//$like_arr[] = "tags like '%{$val}%'";
+				$regexp_arr[] = "tags regexp '[[:<:]](" . $val . ")[[:>:]]'";
+					
+			}
 
+			$where_count[] = implode(" {$row['xfields_s']} ", $regexp_arr);
 			
 		} 
 		
 		if( $row['current_xfields'] ) {
 			
-			$row['current_xfields'] = explode('||',$row['current_xfields']);
+			$row['current_xfields'] = explode(',', $row['current_xfields']);
+			$regexp_arr = array();
 			
-			$like_arr = array();
 			foreach( $row['current_xfields'] as $val ) {
-				$val = @$db->safesql( $val );
-				$like_arr[] = "xfields like '%{$val}%'";
+				
+				$val = @$db->safesql( trim($val) );
+				//$like_arr[] = "xfields like '%{$val}%'";
+				$regexp_arr[] = "xfields regexp '[[:<:]](" . $val . ")[[:>:]]'";
+				
 			}
 			
-			$where_count[] = implode(' AND ', $like_arr);
+			$where_count[] = implode(" {$row['xfields_s']} ", $regexp_arr);
 			
 		}
 		
@@ -310,8 +345,12 @@ if( $collections_id ) {
 			
 		}
 		
-		$tpl->set( '{num_elem}', $row['num_elem'] );
-		$tpl->set( '{url}', $url );
+		$tpl->set( '{num_elem}', 	intval($row['num_elem']) );
+		$tpl->set( '{news_read}', 	intval($row['news_read']) );
+		$tpl->set( '{news_rating}', intval($row['news_rating']) );
+		$tpl->set( '{news_vote}', 	intval($row['news_vote']) );
+		$tpl->set( '{news_comm}', 	intval($row['news_comm']) );
+		$tpl->set( '{url}', 		$url );
 
 		$tpl->compile( 'content' );	
 	
