@@ -2,7 +2,7 @@
 Модуль позволит создавать подборки новостей.
 
 Тестировался на версиях движка 13 - 14, PHP 7, MySQL 5.7 (Null)
-Примерное количество установок с **06.2020**: <img src="http://teramoune.had.su/statistic.php?module=Collections&act=install-get" width="28" height="18">
+Примерное количество установок от **01.06.2020**: <img src="http://teramoune.had.su/statistic.php?module=Collections&act=install-get" width="28" height="18">
 
 Список изменений будет [Тут](https://github.com/TeraMoune/Collections-DLE/wiki)
 
