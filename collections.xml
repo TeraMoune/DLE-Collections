@@ -1574,6 +1574,14 @@ function collections_often($ids = 0) {
   
 }]]></replacecode>
 		</operation>
+		<operation action="replace">
+			<searchcode><![CDATA[p.category, p.alt_name,]]></searchcode>
+			<replacecode><![CDATA[p.category, p.collections, p.alt_name,]]></replacecode>
+		</operation>
+		<operation action="replace">
+			<searchcode><![CDATA[$db, $is_logged, $member_id, $xf_inited,]]></searchcode>
+			<replacecode><![CDATA[$db, $is_logged, $member_id, $xf_inited, $remove_canonical, $custom_navigation, $news_found, $collections_info, $collections_link, $collections_list, $collections, $tpl, $row,]]></replacecode>
+		</operation>
 	</file>
 	<file name="engine/inc/search.php">
 		<operation action="before">
