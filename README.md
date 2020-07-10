@@ -1,13 +1,15 @@
 # Collections-DLE (Обновлено от  [27.06.2020](https://github.com/TeraMoune/Collections-DLE/wiki#27062020))
 Модуль позволит создавать подборки новостей.
 
-Тестировался на версиях движка 13 - 14, PHP 7, MySQL 5.7 (Null)
+DLE 14, PHP 7>, MySQL 5.7
 
 Список изменений будет [Тут](https://github.com/TeraMoune/Collections-DLE/wiki)
 
 [F.A.Q.](https://github.com/TeraMoune/Collections-DLE/wiki/F.A.Q.)
 
 [Для дискуссии](https://teramoune.info/free/12-collections-news.html)
+
+P.S. Просьба, аутистам, рукожопым, не русским, хейтерам, не при каких обстоятельствах не беспокоить.
 
 ---
  - Открытый код
