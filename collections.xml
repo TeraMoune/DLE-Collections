@@ -50,8 +50,7 @@ ALTER TABLE `{prefix}_post` DROP `collections`;
 ALTER TABLE `{userprefix}_users` DROP `favorites_collections`;
 ALTER TABLE `{prefix}_usergroups` DROP `collections_allow_edit`;
 DELETE FROM `{prefix}_admin_sections` WHERE name = 'news_collections';]]></mysqldelete>
-	<phpinstall><![CDATA[$db->query("UPDATE ".PREFIX."_usergroups SET collections_allow_edit = 1 WHERE id = 1");
-@file_get_contents('http://teramoune.had.su/statistic.php?module=Collections');]]></phpinstall>
+	<phpinstall><![CDATA[$db->query("UPDATE ".PREFIX."_usergroups SET collections_allow_edit = 1 WHERE id = 1");]]></phpinstall>
 	<phpupgrade><![CDATA[]]></phpupgrade>
 	<phpenable><![CDATA[]]></phpenable>
 	<phpdisable><![CDATA[]]></phpdisable>
