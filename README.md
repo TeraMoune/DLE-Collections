@@ -123,13 +123,7 @@ RewriteRule ^collections(/?)$ index.php?do=collections [L]
 <img src="https://user-images.githubusercontent.com/44625352/62590380-ce959d80-b8d4-11e9-8e8e-05e271592bcc.jpg" width="400">
 </p>
 
-### Donate
-Для материальной благодарности.
+### Контакты
+Email: teramoune@gmail.com
 
- - [Qiwi](https://qiwi.me/teramoune)
- - Z990082286464
- - 4100115063692304 (yandex)
- 
-teramoune@gmail.com
-
-Telegram: @TeraMoune
+Telegram: TeraMoune
