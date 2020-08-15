@@ -3,6 +3,8 @@
 
 DLE 14, PHP 7>, MySQL 5.7
 
+:exclamation::exclamation::exclamation: Я не даю гарантий на правильную работу при использовании посторонних модулей, если у Вас не получается что-то или не работает, это ваша проблема и не моя :exclamation::exclamation::exclamation:
+
 Список изменений будет [Тут](https://github.com/TeraMoune/Collections-DLE/wiki)
 
 [F.A.Q.](https://github.com/TeraMoune/Collections-DLE/wiki/F.A.Q.)
