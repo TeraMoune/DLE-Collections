@@ -4,6 +4,7 @@
 DLE 14, PHP 7>, MySQL 5.7
 
 :exclamation::exclamation::exclamation: Я не даю гарантий на правильную работу при использовании посторонних модулей, если у Вас не получается что-то или не работает, это ваша проблема и не моя :exclamation::exclamation::exclamation:
+
 :exclamation::exclamation::exclamation: И да обновлений больше не будет, и так сделал уже больше чем планировал. Удачи:exclamation::exclamation::exclamation:
 
 
