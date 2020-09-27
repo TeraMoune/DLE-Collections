@@ -5,23 +5,104 @@ if( !defined( 'DATALIFEENGINE' ) OR !defined( 'LOGGED_IN' ) ) {
 
 	$collections_info = get_vars ( "collections" );
 
-	$action = $action ? $action : "settings";
+	$action = $action ? $action : "list";
 	$id = intval( $_REQUEST['id'] );
 
-	$menu_active_settings = " class=\"active\"";
-	$menu_active_list = "";
+	$menu = array();
+	$menu_tmp = array();
+	$menu_tmp['list'] = "Подборки";	
+	$menu_tmp['settings'] = $lang['skin_option'];
+	
+	$menu_active = '';
+	
+	foreach( $menu_tmp as $key => $val ) {
+		
+		if( $action == $key ) $menu_active = ' class="active"';
+		else $menu_active = '';
+		
+		$menu[] = "<li{$menu_active}><a href=\"{$config['admin_path']}?mod=news_collections&action={$key}\">{$val}</a></li>";
+		
+	}
+	
+	$menu = implode($menu);
 	
 	if( $action == "list") {
   
 		$lang['tabs_gr_all'] = $lang['header_tm_1'];
-		$menu_active_list = " class=\"active\"";
-		$menu_active_settings = "";
 		$add_template = "<div style=\"display:inline-block;\">
 		 <a href=\"#\" data-toggle=\"modal\" data-target=\"#addCollections\"><i class=\"fa fa-plus-circle\"></i> Создание новой подборки</a>
 		</div>";
   
 	}
 
+	function c_sort() {
+		global $soft_by, $direction;
+
+
+		$find_sort = "set_c_sort";
+		$direction_sort = "set_direction_sort_c";
+		
+		$find_sort = str_replace( ".", "", $find_sort );
+		$direction_sort = str_replace( ".", "", $direction_sort );
+		
+		$sort = array ();
+		$allowed_sort = array ('id', 'name', 'num_elem', 'date', 'create_date' );
+		
+		if( isset( $_SESSION[$direction_sort] ) AND ($_SESSION[$direction_sort] == "desc" OR $_SESSION[$direction_sort] == "asc") ) $direction = $_SESSION[$direction_sort];
+		else $direction = "ASC";
+
+		if( isset( $_SESSION[$find_sort] ) AND $_SESSION[$find_sort] AND in_array( $_SESSION[$find_sort], $allowed_sort ) ) $soft_by = $_SESSION[$find_sort];
+		else $soft_by = "id";
+		
+		$soft_by_array = array (
+
+		'id' => array (
+
+			'name' => "#", 'value' => "id", 'direction' => "desc", 'image' => "" ), 
+
+		'name' => array (
+
+			'name' => "Название подборки", 'value' => "name", 'direction' => "desc", 'image' => "" ),
+		
+		'num_elem' => array (
+
+			'name' => "Количество новостей", 'value' => "num_elem", 'direction' => "desc", 'image' => "" ),
+
+		'create_date' => array (
+
+			'name' => "Создана", 'value' => "create_date", 'direction' => "desc", 'image' => "" ),
+
+		'date' => array (
+
+			'name' => "Обновлена", 'value' => "date", 'direction' => "desc", 'image' => "" )		
+
+		 );
+
+		
+		if( strtolower( $direction ) == "asc" ) {
+			
+			$soft_by_array[$soft_by]['image'] = " class=\"desc\"";
+			$soft_by_array[$soft_by]['direction'] = "desc";
+		
+		} else {
+
+			$soft_by_array[$soft_by]['image'] = " class=\"asc\"";
+			$soft_by_array[$soft_by]['direction'] = "asc";
+		}
+		
+		$soft_by_array['menu'] = array ( 'name' => "Меню" );
+		
+		foreach ( $soft_by_array as $key => $value ) {
+			
+			if($key == 'menu') $sort[] = "<th" . $value['image'] . ">" . $value['name'] . "</th>";
+			else $sort[] = "<th" . $value['image'] . "><a href=\"#\" class=\"cl2\" data-sort=\"{$value['value']}\" onclick=\"c_change_sort('{$value['value']}','{$value['direction']}'); return false;\">" . $value['name'] . "</a></th>";
+		}
+		
+		$sort = "<thead><tr>" . implode( $sort ) . "</tr></thead>";
+		
+		return $sort;
+	}	
+	
     function saveFile($path, $filename) {
 
 		$filename = totranslit( $filename );
@@ -181,7 +262,7 @@ if( $action == "settings" ) {
     $save_con['collection_disable_index'] = intval($save_con['collection_disable_index']);	
     $save_con['collections_log'] = intval($save_con['collections_log']);	
     $save_con['collections_empty_show'] = intval($save_con['collections_empty_show']);	
-    $save_con['collections_extended_info'] = intval($save_con['collections_extended_info']);	
+    //$save_con['collections_extended_info'] = intval($save_con['collections_extended_info']);	
     $save_con['collections_often_collections'] = intval($save_con['collections_often_collections']);	
     $save_con['collection_often_news_number'] = intval($save_con['collection_often_news_number']);	
     
@@ -247,8 +328,7 @@ if( $action == "settings" ) {
 <div class="navbar navbar-default navbar-component navbar-xs" style="z-index: inherit;">
   <div class="navbar-collapse collapse" id="navbar-filter">
     <ul class="nav navbar-nav">
-      <li{$menu_active_settings}><a href="?mod=news_collections">{$lang['skin_option']}</a></li>
-      <li{$menu_active_list}><a href="?mod=news_collections&action=list">Подборки</a></li>
+		{$menu}
     </ul>
   </div>
 </div>
@@ -270,7 +350,7 @@ HTML;
 	showRow( $lang['opt_sys_an'], "<a onclick=\"javascript:Help('date'); return false;\" href=\"#\">$lang[opt_sys_and]</a>", "<div style=\"float:right\"><input  type=\"text\" class=\"form-control\" style=\"max-width:150px; text-align: center;\" name=\"save_con[collection_timestamp_active]\" value=\"".( $config['collection_timestamp_active'] ? $config['collection_timestamp_active'] : $config['timestamp_active'] )."\"></div>" );
 	showRow( "Логи действий в админ панели", "", "<div style=\"float:right\">" . makeCheckBox( "save_con[collections_log]", "{$config['collections_log']}" ) . "</div>" );
 	showRow( "Выводить пустые подборки на сайте", "", "<div style=\"float:right\">" . makeCheckBox( "save_con[collections_empty_show]", "{$config['collections_empty_show']}" ) . "</div>" );
-	showRow( "Заполнять дополнительную информацию ?", "Если включено то будет записывать сумму таких значений как количество просмотров новости, комментариев, рейтинг и количество голосов.<br>Для дополнительной выводимой информации, а так же для тега {collections-custom} в котором задаются параметры критерия сортировки.", "<div style=\"float:right\">" . makeCheckBox( "save_con[collections_extended_info]", "{$config['collections_extended_info']}" ) . "</div>" );
+	//showRow( "Заполнять дополнительную информацию ?", "Если включено то будет записывать сумму таких значений как количество просмотров новости, комментариев, рейтинг и количество голосов.<br>Для дополнительной выводимой информации, а так же для тега {collections-custom} в котором задаются параметры критерия сортировки.", "<div style=\"float:right\">" . makeCheckBox( "save_con[collections_extended_info]", "{$config['collections_extended_info']}" ) . "</div>" );
 	showRow( "Часто встречающиеся подборки", "Если включено то будет возможно вывести частые подборки среди всех новостей в текущей подборке.", "<div style=\"float:right\">" . makeCheckBox( "save_con[collections_often_collections]", "{$config['collections_often_collections']}" ) . "</div>" );
 	showRow( "Настройки часто встречающихся подборок", "По умолчанию<br><br>Лимит: 3<br>Повторений не менее: 3", "<div style=\"width:100%;max-width:200px;float:right;\"><div style=\"margin-bottom:10px\"><label for=\"often_limit\" style=\"line-height: 22px;\">Лимит:</label> <input id=\"often_limit\" autocomplete=\"off\" class=\"form-control\" type=\"number\" name=\"save_con[collections_often_limit]\" value=\"" . ( $config['collections_often_limit'] ? $config['collections_often_limit'] : 3 ) . "\" style=\"width:100%;max-width:50px;text-align:center;float: right;\"></div><div><label for=\"min_often\" style=\"line-height: 22px;\">Повторений не менее:</label> <input id=\"min_often\" autocomplete=\"off\" class=\"form-control\" type=\"number\" name=\"save_con[collections_min_often]\" value=\"" . ( $config['collections_min_often'] ? $config['collections_min_often'] : 3 ) . "\" style=\"width:100%;max-width:50px;text-align:center;float: right;\"></div></div>" );
 	
@@ -385,6 +465,7 @@ HTML;
 		$db->query( "DELETE FROM " . PREFIX . "_news_collections WHERE id = '{$id}'" );
 		@unlink( ENGINE_DIR . '/cache/system/collections.php' );
 		@unlink( ENGINE_DIR . '/cache/system/collections_title/collections_title_'.$id.'.php' );
+		clear_cache( array('collections_news_', 'cblock_list_', 'collection_block_') );
 		if( $config['collections_log'] ) $db->query( "INSERT INTO " . USERPREFIX . "_admin_logs (name, date, ip, action, extras) values ('".$db->safesql($member_id['name'])."', '{$_TIME}', '{$_IP}', '48', 'Удаление подборки: ".$db->safesql($row['name'])." - ID: {$id}')" );
 		die('ok');
 		
@@ -530,11 +611,38 @@ HTML;
 
 	
 	@unlink( ENGINE_DIR . '/cache/system/collections.php' );
+	clear_cache( array('collection_block_') );
 	msg( "success", "Подборка добавлена", "Подборка" . " \"" . stripslashes( $name ) . "\" " . $lang['addnews_ok_2'] . $count_news, array('?mod=news_collections&action=list' => 'Назад к списку' ) );
 
 	}
 	
-	$collections = $db->super_query( "SELECT * FROM " . PREFIX . "_news_collections WHERE 1 ORDER BY id ASC", true);
+	if ( isset ( $_POST['set_c_sort'] ) ) {
+
+		$allowed_sort = array ('id', 'name', 'num_elem', 'date', 'create_date' );
+
+		$find_sort = str_replace ( ".", "", totranslit ( $_POST['set_c_sort'] ) );
+		$direction_sort = str_replace ( ".", "", totranslit ( $_POST['set_direction_sort_c'] ) );		
+
+		if (in_array($find_sort, $allowed_sort) ) {
+		
+			if ($_POST['set_direction_sort_c'] == "desc" or $_POST['set_direction_sort_c'] == "asc") {
+
+				$_SESSION['set_c_sort'] = $find_sort;
+				$_SESSION['set_direction_sort_c'] = $direction_sort;
+
+			}
+
+		}
+
+	}
+	
+	if ( isset ( $_SESSION['set_c_sort'] ) ) $is_sort = $_SESSION['set_c_sort'];
+	else $is_sort = "id";
+
+	if ( isset ( $_SESSION['set_direction_sort_c'] ) ) $direction_by = $_SESSION['set_direction_sort_c'];
+	else $direction_by = "ASC";		
+	
+	$collections = $db->super_query( "SELECT * FROM " . PREFIX . "_news_collections WHERE 1 ORDER BY {$is_sort} {$direction_by}", true);
 	
 	$user_group[$member_id['user_group']]['allow_image_upload'] = false;
 	$user_group[$member_id['user_group']]['allow_file_upload'] = false;
@@ -576,12 +684,23 @@ HTML;
 	top: 35%;
 	
 }
+
+.asc a, .desc a {color: #0666f7}
+.asc a:after, .desc a:after {
+	content: "";
+	background-image: url(data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAwAAAAsBAMAAACj90TiAAAAG1BMVEUAAAAzlOYzlOYzlOYzlOYzlOYzlOYzlOYzlOar6gzlAAAACHRSTlMAjesv90eHRuQt1XUAAABSSURBVBjTzdCxDQAhDENRSyzAEFdQ0zDB9axEgzw2DokEI1A9/S4OyAxADEcpPGlpFKWoSpEKp0Dlb6SvG2jY4Fka4tw4PqbEsDNTcb8gn/d4LPQHQDdjhblbAAAAAElFTkSuQmCC);
+	display: inline-block;
+	vertical-align: middle;
+	margin: -1px 0 0 .4em;
+	width: 6px; height: 11px;
+	-webkit-background-size: 6px auto; background-size: 6px auto;
+}
+.asc a:after { background-position: 0 -11px; }
 </style>	
 <div class="navbar navbar-default navbar-component navbar-xs" style="z-index: inherit;">
   <div class="navbar-collapse collapse" id="navbar-filter">
     <ul class="nav navbar-nav">
-      <li{$menu_active_settings}><a href="?mod=news_collections">{$lang['skin_option']}</a></li>
-      <li{$menu_active_list}><a href="?mod=news_collections&action=list">Подборки</a></li>
+		{$menu}
     </ul>
   </div>
 </div> 
@@ -668,6 +787,8 @@ HTML;
 		echo "<div class=\"editor-panel\"><div class=\"shadow-depth1\">{$bb_code}<textarea class=\"editor\" style=\"width:100%;height:300px;\" onfocus=\"setFieldName(this.name)\" name=\"short_story\" id=\"short_story\"></textarea></div></div>";
 	}
 	
+	$thead = c_sort();
+	
 echo <<<HTML
         </div>
         <div class="col-sm-6">
@@ -687,18 +808,9 @@ echo <<<HTML
   </div>
 </div></form>   
   <div class="table-responsive">
-
+<form name="c_set_sort" id="c_set_sort" method="post">
     <table class="table table-normal">
-	  <thead>
-      <tr>
-        <th>#</th>
-        <th>Название подборки</th>
-        <th>Количество новостей</th>
-        <th>Создана</th>
-        <th>Обновлена</th>
-        <th>Меню</th>
-      </tr>
-      </thead>
+	{$thead}
 	  <tbody>
 HTML;
 
@@ -711,7 +823,7 @@ HTML;
 		$addedtime = date( "d.m.Y", $val['create_date'] );
 		$updatetime = date( "d.m.Y", $val['date'] );
 
-		$where_count = array();
+		/*$where_count = array();
 		
 		if( $val['current_tags'] ) {
 			
@@ -743,7 +855,7 @@ HTML;
 			$sql_count 			= $db->super_query("SELECT COUNT(*) as count FROM " . PREFIX . "_post WHERE " . $where_count);
 			$val['num_elem'] 	= $sql_count['count'];		
 			
-		}
+		}*/
 		
 		$menu_link = <<<HTML
         <div class="btn-group">
@@ -770,10 +882,27 @@ HTML;
 
 	}
 
-	echo "</tbody></table></div></div>";
+	echo <<<HTML
+	</tbody></table>
+<input type="hidden" name="set_c_sort" id="set_c_sort" value="{$soft_by}" />
+<input type="hidden" name="set_direction_sort_c" id="set_direction_sort_c" value="{$direction}" />
+</form>	
+</div></div>
+HTML;
 
 	echo <<<HTML
 <script>
+function c_change_sort(sort, direction){
+
+  var frm = document.getElementById('c_set_sort');
+
+  frm.set_c_sort.value=sort;
+  frm.set_direction_sort_c.value=direction;
+
+  frm.submit();
+  return false;
+
+};
 function checkxf ()	{
 
 		var status = '';
@@ -1095,7 +1224,7 @@ HTML;
 		}
 		
 		@unlink( ENGINE_DIR . '/cache/system/collections.php' );
-		clear_cache( array('collections_news_', 'cblock_list_') );
+		clear_cache( array('collections_news_', 'cblock_list_', 'collection_block_') );
 		msg( "success", "Подборка изменена", "Подборка" . " \"" . stripslashes( $name ) . "\" " . "изменена ", array('?mod=news_collections&action=list' => 'Назад к списку' ) );
 
 	}
@@ -1408,6 +1537,7 @@ function imagedelete( value ) {
 	
 				HideLoading('');
 				
+				$('.uploadedfile .info').hide();
 				$('.qq-upload-button').css({'display':'inline-block'});
 				$('#uploadedfile_poster').html('{$up_image_del}');
 				$('#poster').val('');
@@ -1583,7 +1713,8 @@ HTML;
 			$c_id 			= intval($_POST['c_id']);
 			$c_name 		= $collections_info[$c_id]['name'];
 			
-			@unlink( ROOT_DIR . "/uploads/posts/" . $folder_prefix . $image );	
+			@unlink( ROOT_DIR . "/uploads/posts/" . $folder_prefix . $image );
+			@unlink( ENGINE_DIR . '/cache/system/collections.php' );
 			if( $config['collections_log'] ) $db->query( "INSERT INTO " . USERPREFIX . "_admin_logs (name, date, ip, action, extras) values ('".$db->safesql($member_id['name'])."', '{$added_time}', '{$_IP}', '37', 'Удаляет файл обложки из колекции <a href=\"{$config['http_home_url']}{$config['admin_path']}?mod=news_collections&action=edit&id={$c_id}\">" . $db->safesql($c_name) . "</a>')" );
 			die();
 		
@@ -1665,7 +1796,7 @@ HTML;
 		$img_url = $data_url = $config['http_home_url'] . "uploads/posts/" . date( "Y-m" )."/" . $uploaded_filename;
 
 		$link = date( "Y-m" )."/" . $uploaded_filename;
-		
+		@unlink( ENGINE_DIR . '/cache/system/collections.php' );
 		$return_box = "<div class=\"uploadedfile\"><div class=\"info\">{$uploaded_filename}</div><div class=\"uploadimage\"><a class=\"uploadfile\" href=\"{$data_url}\" data-src=\"{$data_url}\" data-type=\"image\"><img style=\"width:auto;height:auto;max-width:100px;max-height:90px;\" src=\"" . $img_url . "\" /></a></div><div class=\"info\">{$i_info[0]}x{$i_info[1]} <a href=\"#\" onclick=\"imagedelete('".$link."');return false;\">Удалить</a></div></div>";
 
 
