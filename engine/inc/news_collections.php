@@ -823,40 +823,6 @@ HTML;
 		$addedtime = date( "d.m.Y", $val['create_date'] );
 		$updatetime = date( "d.m.Y", $val['date'] );
 
-		/*$where_count = array();
-		
-		if( $val['current_tags'] ) {
-			
-			$val['current_tags'] = explode(', ',$val['current_tags']);
-			$where_count[] = "tags regexp '[[:<:]](" . implode('|', $val['current_tags']) . ")[[:>:]]'";
-			
-		} 
-		
-		if( $val['current_xfields'] ) {
-
-			$val['current_xfields'] = explode(', ',$val['current_xfields']);
-			
-			$like_arr = array();
-			foreach( $val['current_xfields'] as $val2 ) {
-				
-				$val2 		= @$db->safesql( $val2 );
-				$like_arr[] = "xfields like '%{$val2}%'";
-				
-			}
-			
-			if( $val['xfields_s'] == 'AND' ) $where_count[] = implode(' AND ', $like_arr);
-			else $where_count[] = implode(' OR ', $like_arr);
-			
-		}
-		
-		if( count($where_count) ) {
-
-			$where_count 		= implode(' AND ', $where_count);
-			$sql_count 			= $db->super_query("SELECT COUNT(*) as count FROM " . PREFIX . "_post WHERE " . $where_count);
-			$val['num_elem'] 	= $sql_count['count'];		
-			
-		}*/
-		
 		$menu_link = <<<HTML
         <div class="btn-group">
           <a href="#" class="dropdown-toggle nocolor" data-toggle="dropdown" aria-expanded="true"><i class="fa fa-bars"></i><span class="caret"></span></a>
@@ -1785,7 +1751,7 @@ HTML;
 
 		$i_info = @getimagesize(ROOT_DIR . "/uploads/posts/".date( "Y-m" )."/" . $uploaded_filename); 
 		
-		if( !in_array( $i_info[2], array (1, 2, 3 ) ) )	{
+		if( !in_array( $i_info[2], array (1, 2, 3, 18 ) ) )	{
 			@unlink( ROOT_DIR . "/uploads/posts/".date( "Y-m" )."/" . $uploaded_filename );
 			return "{\"error\":\"". $lang['upload_error_6'] ."\"}";
 		}
