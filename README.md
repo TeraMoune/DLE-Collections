@@ -109,6 +109,14 @@ RewriteRule ^collections/favorites/page/([0-9]+)(/?)+$ index.php?do=collections&
 RewriteRule ^collections/page/([0-9]+)(/?)+$ index.php?do=collections&cstart=$1 [L]
 RewriteRule ^collections(/?)$ index.php?do=collections [L]
 ```
+
+# Установка (А то многие видать не знают)
+ 1. Скачиваете архив.
+ 2. Распаковываете его и создаёте новый архив где в корне архива размещается xml плагин и файлы модуля.
+ 3. В админке загружаете созданный архив как плагин.
+ 
+ P.S. Не нужно распаковывать и размещать файлы самостоятельно, это делает система плагинов из архива!
+
 # Скриншоты
 
 <p>
