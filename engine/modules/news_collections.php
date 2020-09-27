@@ -27,6 +27,7 @@ if( $collections_id ) {
 
 	$config['collection_news_number'] = $config['collection_news_number'] ? $config['collection_news_number'] : 10;
 	$collections = $db->super_query("SELECT * FROM `".PREFIX."_news_collections` WHERE id = '{$collections_id}'");
+	
 	$c_title = $collections['name'];
 	if( $collections['metatitle'] ) {
 		
@@ -58,6 +59,9 @@ if( $collections_id ) {
 
 	if ( $config['allow_cache'] AND $cache_id <= $config['max_cache_pages'] ) {
 		$active = dle_cache( "collections_news_" . $collections_id, $cache_id, true );
+		
+		if( $active ) $active = json_decode($active, true);
+		
 		$short_news_cache = true;
 		
 	} else {
@@ -67,9 +71,10 @@ if( $collections_id ) {
 		
 	}	
 
-	if ( $active ) {
+	if ( is_array($active) ) {
 
-		$tpl->result['content'] .= $active;
+		$tpl->result['content'] .= $active['content'];
+		$tpl->result['navigation'] = $active['navigation'];
 		$active = null;
 		$news_found = true;
 			
@@ -95,7 +100,7 @@ if( $collections_id ) {
 		
 				}
 
-				$where[] = implode(" {$collections['tags_s']} ", $regexp_arr);
+				$where['tags'] = "(" . implode(" {$collections['tags_s']} ", $regexp_arr) . ")";
 			}
 			
 			if( $collections['current_xfields'] ) {
@@ -111,7 +116,7 @@ if( $collections_id ) {
 
 				}
 				
-				$where[] = implode(" {$collections['xfields_s']} ", $regexp_arr);
+				$where['xf'] = "(" . implode(" {$collections['xfields_s']} ", $regexp_arr) . ")";
 				
 			}			
 			
@@ -121,7 +126,7 @@ if( $collections_id ) {
 			$where[] = "p.id regexp '[[:<:]](" . @$db->safesql( implode('|', $collections['news_ids']) ) . ")[[:>:]]'";
 			
 		}	
-
+		
 		if( count($where) ) $where = implode(' AND ', $where);
 		if( $config['collections_often_collections'] ) $string_c = ", if(collections,GROUP_CONCAT(collections SEPARATOR ','),null) as collections ";
 		else $string_c = " ";
@@ -132,12 +137,13 @@ if( $collections_id ) {
 		$allow_active_news = true;
 		$view_template = "collections";
 		$config['news_number'] = $config['collection_news_number'];
+		
 		include_once (DLEPlugins::Check(ENGINE_DIR . '/modules/show.short.php'));
 		
 		if( $config['collections_often_collections'] ) {
 		
 			$ids_r = collections_often($cr);
-			if( $ids_r ) $often_t = show_collections(array( 1 => 'id="'.$ids_r.'" limit="'.( $config['collections_often_limit'] ? $config['collections_often_limit'] : 3 ).'"'));
+			if( $ids_r ) $often_t = show_collections(array( 1 => 'id="'.$ids_r.'" template="collections_often" limit="'.( $config['collections_often_limit'] ? $config['collections_often_limit'] : 3 ).'"'));
 			
 		}
 		
@@ -146,7 +152,9 @@ if( $collections_id ) {
 		}
 				
 		if ($news_found AND $cache_id <= $config['max_cache_pages'] ) {
-			create_cache ( "collections_news_" . $collections_id, $tpl->result['content'], $cache_id, true );
+
+			create_cache ( "collections_news_" . $collections_id, json_encode( array('content' => $tpl->result['content'], 'navigation' => $tpl->result['navigation'] ) , JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES ), $cache_id, true );
+			
 		}
 	}
 	
@@ -299,51 +307,6 @@ if( $collections_id ) {
 			$tpl->set( '[/not-descr]', '' );
 		
 		} else $tpl->set_block( "'\\[not-descr\\](.*?)\\[/not-descr\\]'si", "" );
-		
-		$where_count = array();
-		
-		if( $row['current_tags'] ) {
-			
-			$row['current_tags'] = explode(',', $row['current_tags']);
-			$regexp_arr = array();	
-			foreach( $row['current_tags'] as $val ) {
-					
-				$val = @$db->safesql( trim($val) );
-				//$like_arr[] = "tags like '%{$val}%'";
-				$regexp_arr[] = "tags regexp '[[:<:]](" . $val . ")[[:>:]]'";
-					
-			}
-
-			$where_count[] = implode(" {$row['xfields_s']} ", $regexp_arr);
-			
-		} 
-		
-		if( $row['current_xfields'] ) {
-			
-			$row['current_xfields'] = explode(',', $row['current_xfields']);
-			$regexp_arr = array();
-			
-			foreach( $row['current_xfields'] as $val ) {
-				
-				$val = @$db->safesql( trim($val) );
-				//$like_arr[] = "xfields like '%{$val}%'";
-				$regexp_arr[] = "xfields regexp '[[:<:]](" . $val . ")[[:>:]]'";
-				
-			}
-			
-			$where_count[] = implode(" {$row['xfields_s']} ", $regexp_arr);
-			
-		}
-		
-		if( count($where_count) ) {
-			
-			$where_count = implode(' AND ', $where_count);
-			
-			$sql_countt = $db->super_query("SELECT COUNT(*) as count FROM " . PREFIX . "_post WHERE " . $where_count);
-			
-			$row['num_elem'] = $sql_countt['count'];
-			
-		}
 		
 		$tpl->set( '{num_elem}', 	intval($row['num_elem']) );
 		$tpl->set( '{news_read}', 	intval($row['news_read']) );
@@ -529,9 +492,25 @@ if( $collections_id ) {
 		}
 		
 		if( !$no_prev OR !$no_next ) {
-			$tpl->compile( 'navi' );
+			$tpl->compile( 'navigation' );
 	
-			$tpl->result['content'] .= $tpl->result['navi'];	
+			switch ( $config['news_navigation'] ) {
+
+				case "2" :
+					
+					$tpl->result['content'] = '{newsnavigation}'.$tpl->result['content'];
+					break;
+
+				case "3" :
+					
+					$tpl->result['content'] = '{newsnavigation}'.$tpl->result['content'].'{newsnavigation}';
+					break;
+
+				default :
+					$tpl->result['content'] .= '{newsnavigation}';
+					break;
+			
+			}
 			
 		}
 		
