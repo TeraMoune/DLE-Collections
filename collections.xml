@@ -1348,14 +1348,12 @@ function show_collections( $matches=array() ) {
 	if( preg_match( "#order=['\"](.+?)['\"]#i", $param_str, $match ) ) {
 	
 		$allowed_sort = array ('date' => 'date', 'create_date' => 'create_date', 'num_elem' => 'num_elem', 'news_read' => 'news_read', 'news_rating' => 'news_rating', 'news_vote' => 'news_vote', 'news_comm' => 'news_comm', 'name' => 'name', 'rand' => 'RAND()' );
-		$extended = array('news_read','news_rating','news_vote','news_comm');
       
 		$match[1] = strtolower($match[1]);
 
 		if ( $allowed_sort[$match[1]] ) $news_sort = $allowed_sort[$match[1]];
 
 		if ( $match[1] == "rand" ) { $news_msort = ""; }
-      	if ( !$config['collections_extended_info'] AND in_array($match[1], $extended) ) { $news_sort = "date"; }
 
 	} else $news_sort = "date";
 
@@ -1833,59 +1831,156 @@ function collections_often($ids = 0) {
 		<operation action="before">
 			<searchcode><![CDATA[function dle_session( $sid = false ) {]]></searchcode>
 			<replacecode><![CDATA[function collectionsSumExtended_info( $c_id = 0, $news_ids = 0 ) {
-  	global $db, $config;	
-  
-  	if( !$config['collections_extended_info'] ) return false;
-  
+  	global $db;	
+
     if( $c_id ) {
 
-        $news_read = $db->super_query("SELECT sum(e.news_read) as sum_read, sum(e.rating) as sum_rating, sum(e.vote_num) as sum_vote, sum(p.comm_num) as sum_comm FROM `".PREFIX."_post` p LEFT JOIN `".PREFIX."_post_extras` e ON (p.id=e.news_id) WHERE id IN({$news_ids})");
+		$collections = $db->super_query("SELECT id, news_ids, current_tags, current_xfields, tags_s, xfields_s FROM `".PREFIX."_news_collections` WHERE id = '{$c_id}'");
+	
+		$where = array();
+		$current_select_tags = " ";
+		if( $collections['current_tags'] OR $collections['current_xfields'] ) {
+			
+			if( $collections['current_tags'] ) {
+				
+				$collections['current_tags'] = explode(',', $collections['current_tags']);
+				$regexp_arr = array();
+				$current_select_tags = " INNER JOIN " . PREFIX . "_tags t on (t.news_id=p.id) ";
+					
+				foreach( $collections['current_tags'] as $val ) {
+						
+					$val = @$db->safesql( trim($val) );
+					$regexp_arr[] = "t.tag regexp '[[:<:]](" . $val . ")[[:>:]]'";
 		
-        $sum_info = array();
-        
-        if( $news_read['sum_read'] ) 	$sum_info[] = "news_read = '{$news_read['sum_read']}'";
-        if( $news_read['sum_rating'] ) 	$sum_info[] = "sum_rating = '{$news_read['sum_rating']}'";
-        if( $news_read['sum_vote'] ) 	$sum_info[] = "sum_vote = '{$news_read['sum_vote']}'";
-        if( $news_read['sum_comm'] ) 	$sum_info[] = "sum_comm = '{$news_read['sum_comm']}'";
-        
-        
-        if( count($sum_info) ) {
-          
-			$sum_info = implode(', ', $sum_info);
-          	$db->query( "UPDATE " . PREFIX . "_news_collections SET {$sum_info} WHERE id = '{$c_id}'" );
+				}
 
-        }  
+				$where['tags'] = "(" . implode(" {$collections['tags_s']} ", $regexp_arr) . ")";
+			}
+			
+			if( $collections['current_xfields'] ) {
+				
+				$collections['current_xfields'] = explode(',', $collections['current_xfields']);
+				$regexp_arr = array();
+				
+				foreach( $collections['current_xfields'] as $val ) {
+					
+					$val = @$db->safesql( trim($val) );
+					$regexp_arr[] = "p.xfields regexp '[[:<:]](" . $val . ")[[:>:]]'";
 
+				}
+				
+				$where['xf'] = "(" . implode(" {$collections['xfields_s']} ", $regexp_arr) . ")";
+				
+			}			
+			
+		} else {
+			
+			$collections['news_ids'] = explode(',', $collections['news_ids']);
+			$where[] = "p.id regexp '[[:<:]](" . @$db->safesql( implode('|', $collections['news_ids']) ) . ")[[:>:]]'";
+			
+		}	
+		
+		if( count($where) ) {
+			
+			$where = implode(' AND ', $where);
+	
+			$news_read = $db->super_query("SELECT count(p.id) as num_elem, sum(e.news_read) as sum_read, sum(e.rating) as sum_rating, sum(e.vote_num) as sum_vote, sum(p.comm_num) as sum_comm FROM `".PREFIX."_post` p{$current_select_tags}LEFT JOIN `".PREFIX."_post_extras` e ON (p.id=e.news_id) WHERE {$where}");
+			
+			$news_read['num_elem'] 		= $news_read['num_elem'] 	? $news_read['num_elem'] 	: 0;
+			$news_read['sum_read'] 		= $news_read['sum_read'] 	? $news_read['sum_read'] 	: 0;
+			$news_read['sum_rating'] 	= $news_read['sum_rating'] 	? $news_read['sum_rating'] 	: 0;
+			$news_read['sum_vote'] 		= $news_read['sum_vote'] 	? $news_read['sum_vote'] 	: 0;
+			$news_read['sum_comm'] 		= $news_read['sum_comm'] 	? $news_read['sum_comm'] 	: 0;
+			
+			$sum_info = array();
+			
+			$sum_info[] = "num_elem = '{$news_read['num_elem']}'";
+			$sum_info[] = "news_read = '{$news_read['sum_read']}'";
+			$sum_info[] = "news_rating = '{$news_read['sum_rating']}'";
+			$sum_info[] = "news_vote = '{$news_read['sum_vote']}'";
+			$sum_info[] = "news_comm = '{$news_read['sum_comm']}'";
+			$sum_info 	= implode(', ', $sum_info);
+
+			$db->query( "UPDATE " . PREFIX . "_news_collections SET {$sum_info} WHERE id = '{$c_id}'" );
+
+		}
+		
     } else {
 
-      $sql = $db->super_query("SELECT id, news_ids, current_tags, current_xfields FROM `".PREFIX."_news_collections`", true);
+      $sql = $db->super_query("SELECT id, news_ids, current_tags, current_xfields, tags_s, xfields_s FROM `".PREFIX."_news_collections`", true);
 
-      foreach( $sql as $row ) {
-        
-        if( !$row['news_ids'] OR !$row['current_tags'] OR !$row['current_xfields'] ) continue;
-        
-        $wh = array();
-        if( $row['news_ids'] ) $wh[] = "id IN({$row['news_ids']})";
-        elseif($row['current_tags'] ) $wh[] = "tags LIKE '%{$val}%'";
-        elseif($row['current_xfields'] ) $wh[] = "xfields LIKE '%{$val}%'";
-        
-        $news_read = $db->super_query("SELECT sum(e.news_read) as sum_read, sum(e.rating) as sum_rating, sum(e.vote_num) as sum_vote, sum(p.comm_num) as sum_comm FROM `".PREFIX."_post` p LEFT JOIN `".PREFIX."_post_extras` e ON (p.id=e.news_id) WHERE {$wh}");        
+      foreach( $sql as $collections ) {
 		
-        $sum_info = array();
+        if( !$collections['news_ids'] AND (!$collections['current_tags'] AND !$collections['current_xfields']) ) continue;
         
-        if( $news_read['sum_read'] ) 	$sum_info[] = "news_read = '{$news_read['sum_read']}'";
-        if( $news_read['sum_rating'] ) 	$sum_info[] = "sum_rating = '{$news_read['sum_rating']}'";
-        if( $news_read['sum_vote'] ) 	$sum_info[] = "sum_vote = '{$news_read['sum_vote']}'";
-        if( $news_read['sum_comm'] ) 	$sum_info[] = "sum_comm = '{$news_read['sum_comm']}'";
-        
-        
-        if( count($sum_info) ) {
-          
-			$sum_info = implode(', ', $sum_info);
-          	$db->query( "UPDATE " . PREFIX . "_news_collections SET {$sum_info} WHERE id = '{$row['id']}'" );
+		$where = array();
+		$current_select_tags = " ";
+		if( $collections['current_tags'] OR $collections['current_xfields'] ) {
+			
+			if( $collections['current_tags'] ) {
+				
+				$collections['current_tags'] = explode(',', $collections['current_tags']);
+				$regexp_arr = array();
+				$current_select_tags = " INNER JOIN " . PREFIX . "_tags t on (t.news_id=p.id) ";
+					
+				foreach( $collections['current_tags'] as $val ) {
+						
+					$val = @$db->safesql( trim($val) );
+					$regexp_arr[] = "t.tag regexp '[[:<:]](" . $val . ")[[:>:]]'";
+		
+				}
 
-        }
+				$where['tags'] = "(" . implode(" {$collections['tags_s']} ", $regexp_arr) . ")";
+			}
+			
+			if( $collections['current_xfields'] ) {
+				
+				$collections['current_xfields'] = explode(',', $collections['current_xfields']);
+				$regexp_arr = array();
+				
+				foreach( $collections['current_xfields'] as $val ) {
+					
+					$val = @$db->safesql( trim($val) );
+					$regexp_arr[] = "p.xfields regexp '[[:<:]](" . $val . ")[[:>:]]'";
 
+				}
+				
+				$where['xf'] = "(" . implode(" {$collections['xfields_s']} ", $regexp_arr) . ")";
+				
+			}			
+			
+		} else {
+			
+			$collections['news_ids'] = explode(',', $collections['news_ids']);
+			$where[] = "p.id regexp '[[:<:]](" . @$db->safesql( implode('|', $collections['news_ids']) ) . ")[[:>:]]'";
+			
+		}	
+		
+		if( count($where) ) {
+			
+			$where = implode(' AND ', $where); 
+ 
+			$news_read = $db->super_query("SELECT count(p.id) as num_elem, sum(e.news_read) as sum_read, sum(e.rating) as sum_rating, sum(e.vote_num) as sum_vote, sum(p.comm_num) as sum_comm FROM `".PREFIX."_post` p{$current_select_tags}LEFT JOIN `".PREFIX."_post_extras` e ON (p.id=e.news_id) WHERE {$where}");
+		
+			$news_read['num_elem'] 		= $news_read['num_elem'] 	? $news_read['num_elem'] 	: 0;
+			$news_read['sum_read'] 		= $news_read['sum_read'] 	? $news_read['sum_read'] 	: 0;
+			$news_read['sum_rating'] 	= $news_read['sum_rating'] 	? $news_read['sum_rating'] 	: 0;
+			$news_read['sum_vote'] 		= $news_read['sum_vote'] 	? $news_read['sum_vote'] 	: 0;
+			$news_read['sum_comm'] 		= $news_read['sum_comm'] 	? $news_read['sum_comm'] 	: 0;
+			
+			$sum_info = array();
+			
+			$sum_info[] = "num_elem = '{$news_read['num_elem']}'";
+			$sum_info[] = "news_read = '{$news_read['sum_read']}'";
+			$sum_info[] = "news_rating = '{$news_read['sum_rating']}'";
+			$sum_info[] = "news_vote = '{$news_read['sum_vote']}'";
+			$sum_info[] = "news_comm = '{$news_read['sum_comm']}'";
+			$sum_info 	= implode(', ', $sum_info);
+			
+			$db->query( "UPDATE " . PREFIX . "_news_collections SET {$sum_info} WHERE id = '{$collections['id']}'" );
+
+		}
+		
       }
 
     }
