@@ -607,7 +607,7 @@ if( count($c_list) AND $c_list[0] != 0 ) {
 
       @unlink( ENGINE_DIR . '/cache/system/collections.php' );
       @unlink( ENGINE_DIR . '/cache/system/collections_title/collections_title_'.$val.'.php' );
-      clear_cache( array('collections_news_', 'cblock_list_') );
+      clear_cache( array('collections_news_', 'cblock_list_', 'collection_block_') );
       $db->query("UPDATE ".PREFIX."_news_collections SET date = '{$thistime}', num_elem = num_elem+1, news_ids = '{$c_list}' WHERE id = '{$val}'");
   	  
       collectionsSumNewsRead($val, $c_list);
@@ -772,7 +772,7 @@ $c_list = $db->safesql( implode( ',', $c_list ) );]]></replacecode>
 
 				@unlink( ENGINE_DIR . '/cache/system/collections.php' );
 				@unlink( ENGINE_DIR . '/cache/system/collections_title/collections_title_'.$val.'.php' );
-				clear_cache( array('collections_news_', 'cblock_list_') );
+				clear_cache( array('collections_news_', 'cblock_list_', 'collection_block_') );
 				$db->query("UPDATE ".PREFIX."_news_collections SET date = '{$thistime}', num_elem = num_elem+1, news_ids = '{$c_list}' WHERE id = '{$val}'");
 			  
 			}
@@ -803,6 +803,7 @@ $c_list = $db->safesql( implode( ',', $c_list ) );]]></replacecode>
 				else $c_list = "";
 
 				@unlink( ENGINE_DIR . '/cache/system/collections_title/collections_title_'.$val.'.php' );
+              	clear_cache( array('collections_news_', 'cblock_list_', 'collection_block_') );
 				$db->query("UPDATE ".PREFIX."_news_collections SET num_elem = num_elem - 1, news_ids = '{$c_list}' WHERE id = '{$val}'");
 			  
 			}
@@ -834,7 +835,8 @@ $c_list = $db->safesql( implode( ',', $c_list ) );]]></replacecode>
         if( count( $list ) ) $c_list = $db->safesql(implode( ",", $list ));
         else $c_list = "";
 
-        @unlink( ENGINE_DIR . '/cache/system/collections_title/collections_title_'.$val.'.php' );  
+        @unlink( ENGINE_DIR . '/cache/system/collections_title/collections_title_'.$val.'.php' );
+      	clear_cache( array('collections_news_', 'cblock_list_', 'collection_block_') );
         $db->query("UPDATE ".PREFIX."_news_collections SET num_elem = num_elem - 1, news_ids = '{$c_list}' WHERE id = '{$val}'");
 
     }    
@@ -955,6 +957,7 @@ if( $_REQUEST['action'] == "save" ) {
 			  else $c_list = "";
 
 			  @unlink( ENGINE_DIR . '/cache/system/collections_title/collections_title_'.$val.'.php' );
+              clear_cache( array('collections_news_', 'cblock_list_', 'collection_block_') );
 			  $db->query("UPDATE ".PREFIX."_news_collections SET num_elem = num_elem - 1, news_ids = '{$c_list}' WHERE id = '{$val}'");
 			  
 			}
@@ -986,7 +989,8 @@ if( $_REQUEST['action'] == "save" ) {
 			if( count( $list ) ) $c_list = $db->safesql(implode( ",", $list ));
 			else $c_list = "";
 
-			@unlink( ENGINE_DIR . '/cache/system/collections_title/collections_title_'.$val.'.php' );  
+			@unlink( ENGINE_DIR . '/cache/system/collections_title/collections_title_'.$val.'.php' );
+          	clear_cache( array('collections_news_', 'cblock_list_', 'collection_block_') );
 			$db->query("UPDATE ".PREFIX."_news_collections SET num_elem = num_elem - 1, news_ids = '{$c_list}' WHERE id = '{$val}'");
 
 		}    
@@ -1721,7 +1725,8 @@ function collections_often($ids = 0) {
     if( count( $list ) ) $c_list = $db->safesql(implode( ",", $list ));
     else $c_list = "";
 	
-    @unlink( ENGINE_DIR . '/cache/system/collections_title/collections_title_'.$val.'.php' );  
+    @unlink( ENGINE_DIR . '/cache/system/collections_title/collections_title_'.$val.'.php' );
+    clear_cache( array('collections_news_', 'cblock_list_', 'collection_block_') );
     $db->query("UPDATE ".PREFIX."_news_collections SET num_elem = num_elem - 1, news_ids = '{$c_list}' WHERE id = '{$val}'");
 
   }
@@ -1742,7 +1747,7 @@ function collections_often($ids = 0) {
 		</operation>
 		<operation action="replace">
 			<searchcode><![CDATA['$allow_file_upload', '$allow_signature',]]></searchcode>
-			<replacecode><![CDATA['$allow_file_upload', '$allow_signature', 'collections_allow_edit',]]></replacecode>
+			<replacecode><![CDATA['$allow_file_upload', 'collections_allow_edit', '$allow_signature',]]></replacecode>
 		</operation>
 		<operation action="replace">
 			<searchcode><![CDATA[allow_file_upload='$allow_file_upload',]]></searchcode>
@@ -1953,7 +1958,7 @@ if( count($c_list) AND $c_list[0] != 0 ) {
 
       @unlink( ENGINE_DIR . '/cache/system/collections.php' );
       @unlink( ENGINE_DIR . '/cache/system/collections_title/collections_title_'.$val.'.php' );
-      clear_cache( array('collections_news_', 'cblock_list_') );
+      clear_cache( array('collections_news_', 'cblock_list_', 'collection_block_') );
       $db->query("UPDATE ".PREFIX."_news_collections SET date = '{$thistime}', num_elem = num_elem+1, news_ids = '{$c_list}' WHERE id = '{$val}'");
   	  
       collectionsSumExtended_info($val, $c_list);
