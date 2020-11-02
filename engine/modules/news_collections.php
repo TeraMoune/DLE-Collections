@@ -15,6 +15,7 @@ if( isset( $_GET['action'] ) and $_GET['action'] == "favorites" ) {
 	$is_fav = 0;
 }
 
+$config['collection_number'] = isset($config['collection_number']) ? $config['collection_number'] : $config['news_number'];
 
 if ( $cstart ) {
 	
@@ -170,7 +171,6 @@ if( $collections_id ) {
 		
 	} else $fav = "1";
 
-	$config['collection_number'] = $config['collection_number'] ? $config['collection_number'] : 10;
 	$news_sort_by = ($config['collections_sort']) ? $config['collections_sort'] : $config['news_sort'];
 	$news_direction_by = ($config['collections_msort']) ? $config['collections_msort'] : $config['news_msort'];	
 	
