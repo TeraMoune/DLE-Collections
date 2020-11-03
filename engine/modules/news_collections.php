@@ -15,7 +15,8 @@ if( isset( $_GET['action'] ) and $_GET['action'] == "favorites" ) {
 	$is_fav = 0;
 }
 
-$config['collection_number'] = isset($config['collection_number']) ? $config['collection_number'] : $config['news_number'];
+$config['collection_number'] 		= isset($config['collection_number']) 		? $config['collection_number'] 		: $config['news_number'];
+$config['collection_news_number'] 	= isset($config['collection_news_number']) 	? $config['collection_news_number'] : $config['news_number'];
 
 if ( $cstart ) {
 	
@@ -26,7 +27,6 @@ if ( $cstart ) {
 
 if( $collections_id ) {
 
-	$config['collection_news_number'] = $config['collection_news_number'] ? $config['collection_news_number'] : 10;
 	$collections = $db->super_query("SELECT * FROM `".PREFIX."_news_collections` WHERE id = '{$collections_id}'");
 	
 	$c_title = $collections['name'];
