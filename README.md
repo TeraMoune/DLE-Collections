@@ -139,6 +139,8 @@ RewriteRule ^collections(/?)$ index.php?do=collections [L]
 </p>
 
 ### Контакты
+Только для платной работы и оплачиваемой помощи. Всё остальное будет проигнорировано.
+
 Email: teramoune@gmail.com
 
 Telegram: TeraMoune
