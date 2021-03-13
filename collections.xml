@@ -339,6 +339,10 @@ else $next = $url_page . '/page/' . $next_page . '/';]]></replacecode>
     }
 }]]></replacecode>
 		</operation>
+		<operation action="after">
+			<searchcode><![CDATA[$count_all = $db->super_query( $sql_count );]]></searchcode>
+			<replacecode><![CDATA[if( $count_all['collections'] ) $cr = $count_all['collections'];]]></replacecode>
+		</operation>
 	</file>
 	<file name="engine/modules/show.full.php">
 		<operation action="before">
@@ -2163,6 +2167,10 @@ foreach( $collections_info as $val ) {
 			<searchcode><![CDATA[$map .= $this->get_news();]]></searchcode>
 			<replacecode><![CDATA[$map .= $this->get_collections();]]></replacecode>
 		</operation>
+		<operation action="after">
+			<searchcode><![CDATA[var $cat_priority = "0.7";]]></searchcode>
+			<replacecode><![CDATA[var $collections_priority = "0.7";]]></replacecode>
+		</operation>
 	</file>
 	<file name="engine/modules/show.custom.php">
 		<operation action="after">
@@ -2194,6 +2202,22 @@ foreach( $collections_info as $val ) {
 	$tpl->set( '[/not-collections]', "" );
 
 }]]></replacecode>
+		</operation>
+	</file>
+	<file name="engine/inc/googlemap.php">
+		<operation action="before">
+			<searchcode><![CDATA[   </div>
+   <div class="panel-footer"><input type="submit" class="btn bg-teal btn-sm btn-raised" value="{$lang['google_create']}"></div>	]]></searchcode>
+			<replacecode><![CDATA[<div class="form-group">
+  <label class="control-label col-sm-4 col-xs-6">Приоритет подборок</label>
+  <div class="col-sm-8 col-xs-6">
+	<input type="text" class="form-control" style="width:60px;" name="collections_priority" value="0.7">
+   </div>
+ </div>	]]></replacecode>
+		</operation>
+		<operation action="after">
+			<searchcode><![CDATA[$map->cat_priority = strip_tags(stripslashes($_POST['cat_priority']));]]></searchcode>
+			<replacecode><![CDATA[$map->collections_priority = strip_tags(stripslashes($_POST['collections_priority']));]]></replacecode>
 		</operation>
 	</file>
 </dleplugin>
