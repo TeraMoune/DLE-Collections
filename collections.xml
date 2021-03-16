@@ -614,7 +614,7 @@ if( count($c_list) AND $c_list[0] != 0 ) {
       clear_cache( array('collections_news_', 'cblock_list_', 'collection_block_') );
       $db->query("UPDATE ".PREFIX."_news_collections SET date = '{$thistime}', num_elem = num_elem+1, news_ids = '{$c_list}' WHERE id = '{$val}'");
   	  
-      collectionsSumNewsRead($val, $c_list);
+      collectionsSumExtended_info($val, $c_list);
       
     }
     
