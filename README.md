@@ -3,10 +3,6 @@
 
 DLE 14, PHP 7>, MySQL 5.7
 
-:exclamation::exclamation::exclamation: Обновлений больше не будет.
-
-Список изменений будет [Тут](https://github.com/TeraMoune/Collections-DLE/wiki)
-
 [F.A.Q.](https://github.com/TeraMoune/Collections-DLE/wiki/F.A.Q.)
 
 ---
